@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased - documentation
+
+- Expanded the GitHub README with a Mermaid workflow diagram, installation,
+  stage, output, validation, recovery, and limitations guidance.
+- Added a task-oriented documentation index and an exact pipeline-stage guide.
+- Clarified output discovery and checkpoint/cleanup recovery without changing
+  workflow behavior or configuration defaults.
+
 ## 0.2.0 - 2026-08-22
 
 - Added a reusable, headless deepTools metagene module for TSS, TES, and scaled
