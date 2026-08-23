@@ -730,7 +730,7 @@ id "$CUT_TEST_USER"
 
 sudo -u "$CUT_TEST_USER" test -r \
     /opt/bioinformatics/workflows/cutnrun2tracks/current/README.md
-sudo -u "$CUT_TEST_USER" test -x \
+sudo -u "$CUT_TEST_USER" test -r \
     /opt/bioinformatics/workflows/cutnrun2tracks/current/cutnrun2tracks.sh
 sudo -u "$CUT_TEST_USER" test -x \
     /opt/miniconda/envs/cutnrun2tracks-0.2.0/bin/python3
