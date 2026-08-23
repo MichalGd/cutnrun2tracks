@@ -1,0 +1,6 @@
+item	value
+source_path	D:/bioinformatics/ATAC_VCS/development/ATACseq2tracks_v4.2.0_drosophila_spikein_update_2026-08-20
+source_version	4.2.0
+entrypoint_sha256	C7C9895126EB35BEB92B832D5E8DEE72734646F0DA26D852D8F05AE515A5F6F8
+reuse_policy	Independent scientific refactor; source repository is read-only
+audit_date	2026-08-22

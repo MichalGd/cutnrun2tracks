@@ -1,0 +1,33 @@
+name: cutnrun2tracks-0.2.0
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bash >=4.4
+  - python =3.11
+  - fastqc
+  - multiqc
+  - trim-galore
+  - cutadapt
+  - bowtie2 >=2.5
+  - samtools >=1.18
+  - bedtools >=2.31
+  - picard >=3.1
+  - deeptools >=3.5
+  - macs3 >=3.0
+  - ucsc-bedgraphtobigwig
+  - ucsc-bedclip
+  - preseq
+  - r-base >=4.3
+  - bioconductor-deseq2
+  - bioconductor-diffbind
+  - bioconductor-genomicalignments
+  - bioconductor-genomicranges
+  - bioconductor-rsamtools
+  - bioconductor-rtracklayer
+  - bioconductor-biocparallel
+  - r-ggplot2
+  - pandas
+  - matplotlib
+  - pybigwig

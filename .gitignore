@@ -1,0 +1,9 @@
+config/config.conf
+results/
+work/
+*.windows-artifact-backup.*
+__pycache__/
+*.pyc
+*.Rhistory
+*.RData
+.DS_Store

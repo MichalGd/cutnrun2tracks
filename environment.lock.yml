@@ -1,0 +1,32 @@
+# Platform-neutral version lock for the 0.2.0 validation environment.
+# Resolve with conda-lock for the deployment's linux-64 platform before release.
+name: cutnrun2tracks-0.2.0-locked
+channels: [conda-forge, bioconda, defaults]
+dependencies:
+  - bash=5.2
+  - python=3.11
+  - fastqc=0.12.1
+  - multiqc=1.30
+  - trim-galore=0.6.10
+  - cutadapt=5.1
+  - bowtie2=2.5.5
+  - samtools=1.22.1
+  - bedtools=2.31.1
+  - picard=3.4.0
+  - deeptools=3.5.6
+  - macs3=3.0.4
+  - preseq=3.2.0
+  - r-base=4.6
+  - bioconductor-deseq2=1.52.0
+  - bioconductor-diffbind=3.22.2
+  - bioconductor-genomicalignments
+  - bioconductor-genomicranges
+  - bioconductor-rsamtools
+  - bioconductor-rtracklayer
+  - bioconductor-biocparallel
+  - r-ggplot2
+  - pandas
+  - matplotlib
+  - pybigwig
+  - ucsc-bedgraphtobigwig
+  - ucsc-bedclip
