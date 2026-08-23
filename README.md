@@ -203,6 +203,11 @@ immutable path in `SEACR_COMMAND`, and record the downloaded commit and checksum
 in the local environment record. Single-end runs must use MACS3 because this
 workflow rejects SEACR for SE libraries.
 
+For deployment beside an existing ATACseq2tracks installation, including the
+recommended cloned-environment strategy, all-user read/execute access, a
+system-wide launcher, and exact shared-reference mappings,
+follow the [server installation runbook](docs/08_server_installation.md).
+
 After copying the repository from Windows, restore executable bits if needed:
 
 ```bash
@@ -378,6 +383,7 @@ The complete pilot checklist is in
 | Review current limitations and pilot-validation decisions | [Limitations and pilot decisions](docs/05_limitations.md) |
 | Build gene sets or run aggregate-signal plots | [Metagene module](docs/06_metagene.md) |
 | Understand each workflow stage | [Pipeline stages](docs/07_pipeline_stages.md) |
+| Install beside an existing ATACseq2tracks deployment | [Server installation and reference reuse](docs/08_server_installation.md) |
 | Review test coverage and outstanding integration fixtures | [Test matrix](docs/06_test_matrix.md) |
 
 The complete page list is in the [documentation index](docs/README.md).

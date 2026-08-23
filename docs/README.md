@@ -11,6 +11,7 @@ summary, and principal output tree.
 | Samplesheet rows, technical and biological replicates, matched controls, configuration safety, and plan/preflight validation | [Inputs and configuration](01_inputs_and_configuration.md) |
 | Complete key list and example samplesheets | [`config/README.md`](../config/README.md) and [`config/config.conf.template`](../config/config.conf.template) |
 | Exact stage order, enable/disable behavior, checkpoints, and declared outputs | [Pipeline stages](07_pipeline_stages.md) |
+| Installation beside an existing ATACseq2tracks server environment and shared reference collection | [Server installation and shared-reference reuse](08_server_installation.md) |
 
 ## Understand the analysis
 

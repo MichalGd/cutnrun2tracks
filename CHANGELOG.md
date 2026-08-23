@@ -7,6 +7,12 @@
 - Added a task-oriented documentation index and an exact pipeline-stage guide.
 - Clarified output discovery and checkpoint/cleanup recovery without changing
   workflow behavior or configuration defaults.
+- Added a server installation runbook covering isolated environment cloning,
+  pinned SEACR, shared host-reference reuse, derived canonical/dm6 coordinate
+  files, validation, pilot deployment, and guarded promotion.
+- Added an explicit all-user deployment model with immutable runtime
+  permissions, an optional `/usr/local/bin` launcher, parent-path auditing, and
+  acceptance tests executed as an ordinary server user.
 
 ## 0.2.0 - 2026-08-22
 
