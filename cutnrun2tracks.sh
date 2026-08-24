@@ -43,8 +43,8 @@ while (( $# )); do
     esac
 done
 [[ -n "$CONFIG" && -f "$CONFIG" ]] || { echo "ERROR: --config must name a readable file" >&2; exit 2; }
-(( BASH_VERSINFO[0] > 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] >= 4) )) || {
-    echo "ERROR: Bash >=4.4 is required" >&2; exit 2;
+(( BASH_VERSINFO[0] > 5 || (BASH_VERSINFO[0] == 5 && BASH_VERSINFO[1] >= 1) )) || {
+    echo "ERROR: Bash >=5.1 is required" >&2; exit 2;
 }
 
 temporary="$(mktemp -d)"
@@ -102,7 +102,9 @@ printf 'run_id\tworkflow_version\trun_signature\tassay_profile\tspikein_mode\n%s
 
 force=false
 run_stage() {
-    local stage="$1" command="$2" checkpoint="$OUTPUT_DIR/.checkpoints/${stage}.json"
+    local stage="$1"
+    local command="$2"
+    local checkpoint="$OUTPUT_DIR/.checkpoints/${stage}.json"
     shift 2
     local outputs=("$@")
     if [[ "$stage" == "$FROM_STAGE" ]]; then force=true; fi

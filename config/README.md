@@ -13,3 +13,13 @@ bigWigs and does not perform normalization.
 
 The examples contain illustrative `/data` and `/refs` paths and are not directly
 executable. `cutrun_se.csv` requires `PEAK_CALLERS=macs3`.
+
+Preprocessing parallelism is controlled at two levels:
+
+- `QC_SAMPLE_PARALLEL_JOBS` limits concurrent biological-library workers;
+- `THREADS_FASTQC` is passed to each FastQC process;
+- `THREADS_TRIMGALORE` is passed as `trim_galore --cores` for each worker.
+
+Their products approximate the maximum preprocessing CPU demand. For example,
+the template's `8 x 10` FastQC and `8 x 8` Trim Galore settings suit a large
+shared server but should be reduced for smaller hosts or concurrent heavy runs.

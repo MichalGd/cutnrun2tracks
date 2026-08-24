@@ -1,6 +1,6 @@
-# Platform-neutral version lock for the 0.2.0 validation environment.
+# Platform-neutral version lock for the 0.2.1 validation environment.
 # Resolve with conda-lock for the deployment's linux-64 platform before release.
-name: cutnrun2tracks-0.2.0-locked
+name: cutnrun2tracks-0.2.1-locked
 channels: [conda-forge, bioconda, defaults]
 dependencies:
   - bash=5.2

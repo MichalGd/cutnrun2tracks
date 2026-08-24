@@ -1,4 +1,4 @@
-# cutnrun2tracks 0.2.0 configuration
+# cutnrun2tracks 0.2.1 configuration
 # Plain KEY=VALUE syntax only. Shell expressions and command substitutions are rejected.
 
 # Required run inputs
@@ -34,6 +34,8 @@ TRIMGALORE_EXTRA_ARGS=
 MIN_TRIMMED_LENGTH=20
 RUN_FASTQC=true
 RUN_MULTIQC=true
+THREADS_FASTQC=10
+THREADS_TRIMGALORE=8
 
 # Alignment
 BOWTIE2_MODE=end-to-end

@@ -1,4 +1,4 @@
-# cutnrun2tracks 0.2.0
+# cutnrun2tracks 0.2.1
 
 `cutnrun2tracks` is a samplesheet-driven Bash workflow for paired-end and
 single-end CUT&RUN and CUT&Tag data. It provides assay-aware alignment,
@@ -153,14 +153,14 @@ cutnrun2tracks/
 
 ## Quick start
 
-Linux and Bash 4.4 or newer are required.
+Linux and Bash 5.1 or newer are required.
 
 ```bash
 git clone https://github.com/MichalGd/cutnrun2tracks.git
 cd cutnrun2tracks
 
 mamba env create -f environment.yml
-conda activate cutnrun2tracks-0.2.0
+conda activate cutnrun2tracks-0.2.1
 
 mkdir -p /path/to/project/config
 cp config/config.conf.template /path/to/project/config/config.conf
@@ -194,7 +194,7 @@ Create the environment with Mamba or Conda:
 
 ```bash
 mamba env create -f environment.yml
-conda activate cutnrun2tracks-0.2.0
+conda activate cutnrun2tracks-0.2.1
 ```
 
 SEACR 1.3 is not installed by the Conda environment. Install it separately from
@@ -245,6 +245,20 @@ RUN_METAGENE=false
 SPIKEIN_MODE=none
 ENABLE_AUTOMATIC_CLEANUP=true
 ```
+
+Preprocessing has two independent resource controls. The sample-worker limit
+caps concurrent libraries, while the per-tool settings control CPU use inside
+each worker:
+
+```bash
+QC_SAMPLE_PARALLEL_JOBS=8
+THREADS_FASTQC=10
+THREADS_TRIMGALORE=8
+```
+
+These high-capacity-server defaults can request up to roughly 80 CPU threads
+during FastQC and 64 during trimming. Reduce the values when sharing a smaller
+server; do not estimate total use from `QC_SAMPLE_PARALLEL_JOBS` alone.
 
 One samplesheet row is a sequencing unit. Rows with the same `sample_id`,
 `replicate`, and distinct `tech_replicate` values are merged before trimming;

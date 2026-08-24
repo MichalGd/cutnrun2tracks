@@ -17,7 +17,7 @@ is_true "$GENERATE_ATAQV_VIEWER" && required+=(mkarv)
 is_true "$RUN_TSS_SIGNAL_PROFILE" && required+=(computeMatrix plotProfile)
 is_true "$RUN_METAGENE" && required+=(computeMatrix plotProfile plotHeatmap)
 required+=(plotFingerprint)
-is_true "$RUN_MOTIF_ENRICHMENT" && die "RUN_MOTIF_ENRICHMENT is not implemented in v0.2.0"
+is_true "$RUN_MOTIF_ENRICHMENT" && die "RUN_MOTIF_ENRICHMENT is not implemented in this release"
 
 missing=()
 for command_name in "${required[@]}"; do

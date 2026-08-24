@@ -20,13 +20,33 @@ parallel_pool_init() {
 
 parallel_pool_wait_one() {
     (( ${#PARALLEL_POOL_PIDS[@]} > 0 )) || return 0
-    local pid="${PARALLEL_POOL_PIDS[0]}" label="${PARALLEL_POOL_LABELS[0]}"
-    if ! wait "$pid"; then
+    local finished_pid="" status=0 index label=""
+    if wait -n -p finished_pid "${PARALLEL_POOL_PIDS[@]}"; then
+        status=0
+    else
+        status=$?
+    fi
+    [[ -n "$finished_pid" ]] || {
+        echo "ERROR: parallel pool could not identify the completed worker" >&2
+        return 1
+    }
+    for index in "${!PARALLEL_POOL_PIDS[@]}"; do
+        if [[ "${PARALLEL_POOL_PIDS[$index]}" == "$finished_pid" ]]; then
+            label="${PARALLEL_POOL_LABELS[$index]}"
+            unset "PARALLEL_POOL_PIDS[$index]" "PARALLEL_POOL_LABELS[$index]"
+            PARALLEL_POOL_PIDS=("${PARALLEL_POOL_PIDS[@]}")
+            PARALLEL_POOL_LABELS=("${PARALLEL_POOL_LABELS[@]}")
+            break
+        fi
+    done
+    [[ -n "$label" ]] || {
+        echo "ERROR: completed worker $finished_pid is absent from the parallel pool" >&2
+        return 1
+    }
+    if (( status != 0 )); then
         PARALLEL_POOL_FAILURES=$((PARALLEL_POOL_FAILURES + 1))
         PARALLEL_POOL_FAILED_LABELS+=("$label")
     fi
-    PARALLEL_POOL_PIDS=("${PARALLEL_POOL_PIDS[@]:1}")
-    PARALLEL_POOL_LABELS=("${PARALLEL_POOL_LABELS[@]:1}")
 }
 
 parallel_pool_submit() {

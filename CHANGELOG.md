@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.1 - 2026-08-24
+
+- Added validated `THREADS_FASTQC` and `THREADS_TRIMGALORE` settings and passed
+  them to FastQC and Trim Galore, matching the proven ATACseq2tracks resource
+  model for high-capacity servers.
+- Made the shared bounded worker pool work-conserving by refilling a slot when
+  any worker finishes instead of waiting for submission order.
+- Fixed `set -u` failures caused by referencing variables within the same
+  `local` declaration in the workflow dispatcher and preprocessing worker.
+- Added regression coverage for preprocessing thread validation and parallel
+  pool scheduling.
+
 ## Unreleased - documentation
 
 - Expanded the GitHub README with a Mermaid workflow diagram, installation,

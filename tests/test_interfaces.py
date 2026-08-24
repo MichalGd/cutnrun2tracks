@@ -36,6 +36,25 @@ class InterfaceTests(unittest.TestCase):
                 "GENERATE_DESEQ2_ROBUST_CPM_STRINGENT_TRACKS",
             ):
                 self.assertIn(f"{key}=true", resolved)
+            self.assertIn("THREADS_FASTQC=10", resolved)
+            self.assertIn("THREADS_TRIMGALORE=8", resolved)
+
+    def test_config_rejects_nonpositive_preprocessing_threads(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            text = (ROOT / "config/config.conf.template").read_text(encoding="utf-8")
+            text = text.replace("/absolute/path/to/samplesheet.csv", str(directory / "samples.csv"))
+            text = text.replace("/absolute/path/to/results", str(directory / "results"))
+            text = text.replace("THREADS_TRIMGALORE=8", "THREADS_TRIMGALORE=0")
+            config = directory / "config.conf"
+            config.write_text(text, encoding="utf-8")
+            result = subprocess.run([
+                sys.executable, str(ROOT / "scripts/validate_config.py"), str(config),
+                "--template", str(ROOT / "config/config.conf.template"),
+                "--write-shell", str(directory / "resolved.conf"),
+            ], text=True, capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("THREADS_TRIMGALORE must be a positive integer", result.stderr)
 
     def test_config_rejects_unknown_key(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
