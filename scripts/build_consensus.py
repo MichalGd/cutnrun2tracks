@@ -102,29 +102,78 @@ def main() -> int:
             else:
                 reason = f"{len(members)} biological samples; minimum support is {minimum}"
                 (outdir / "SKIPPED.json").write_text(json.dumps({"status": "SKIPPED", "reason": reason}, indent=2) + "\n")
-                summary.append({"cohort_id": cohort_id, "status": "SKIPPED", "regions": 0, "reason": reason})
+                summary.append({"cohort_id": cohort_id, "status": "SKIPPED", "total_samples": len(members),
+                                "successful_peak_samples": 0, "excluded_samples": 0,
+                                "regions": 0, "reason": reason})
                 failures += int(args.require_all)
                 continue
         peak_files: list[tuple[str, Path]] = []
-        missing = []
+        excluded: list[dict[str, str]] = []
+        inconsistent: list[str] = []
         for member in members:
-            peak = args.output_root.parent / "per_sample" / member["sample_key"] / caller / f"{member['sample_key']}.{caller}.{peak_class}.bed"
-            if not peak.is_file() or peak.stat().st_size == 0:
-                missing.append(str(peak))
+            sample_key = member["sample_key"]
+            sample_root = args.output_root.parent / "per_sample" / sample_key
+            peak = sample_root / caller / f"{sample_key}.{caller}.{peak_class}.bed"
+            metadata = sample_root / "peakcall_metadata.tsv"
+            if not metadata.is_file():
+                inconsistent.append(f"{sample_key}: missing peakcall metadata")
+                continue
+            rows = read_manifest(metadata)
+            if len(rows) != 1:
+                inconsistent.append(f"{sample_key}: invalid peakcall metadata")
+                continue
+            status = rows[0].get("status", "ERROR")
+            reason = rows[0].get("reason", "unspecified")
+            if status not in {"SUCCESS", "EMPTY", "ERROR"}:
+                inconsistent.append(f"{sample_key}: invalid peakcall status {status!r}")
+                continue
+            if (rows[0].get("primary_caller") != caller or
+                    rows[0].get("primary_class") != peak_class):
+                inconsistent.append(f"{sample_key}: primary caller/class metadata disagrees with cohort")
+                continue
+            if status == "SUCCESS":
+                if not peak.is_file() or peak.stat().st_size == 0:
+                    inconsistent.append(f"{sample_key}: SUCCESS but primary peak file is missing/empty")
+                else:
+                    peak_files.append((sample_key, peak))
             else:
-                peak_files.append((member["sample_key"], peak))
-        if missing:
-            reason = "missing/empty primary peaks: " + ", ".join(missing)
+                excluded.append({"sample_key": sample_key, "status": status, "reason": reason})
+        with (outdir / "excluded_peak_samples.tsv").open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=["sample_key", "status", "reason"],
+                                    delimiter="\t", lineterminator="\n")
+            writer.writeheader()
+            writer.writerows(excluded)
+        if inconsistent:
+            reason = "inconsistent primary peak outputs: " + ", ".join(inconsistent)
             (outdir / "FAILED.json").write_text(json.dumps({"status": "FAILED", "reason": reason}, indent=2) + "\n")
-            summary.append({"cohort_id": cohort_id, "status": "FAILED", "regions": 0, "reason": reason})
+            summary.append({"cohort_id": cohort_id, "status": "FAILED", "total_samples": len(members),
+                            "successful_peak_samples": len(peak_files), "excluded_samples": len(excluded),
+                            "regions": 0, "reason": reason})
             failures += 1
             continue
+        if len(peak_files) < minimum:
+            if args.allow_single and len(peak_files) == 1:
+                minimum = 1
+            else:
+                reason = (f"{len(peak_files)} successful primary peak samples after "
+                          f"{len(excluded)} exclusions; minimum support is {minimum}")
+                status = "FAILED" if args.require_all else "SKIPPED"
+                (outdir / f"{status}.json").write_text(
+                    json.dumps({"status": status, "reason": reason}, indent=2) + "\n"
+                )
+                summary.append({"cohort_id": cohort_id, "status": status, "total_samples": len(members),
+                                "successful_peak_samples": len(peak_files), "excluded_samples": len(excluded),
+                                "regions": 0, "reason": reason})
+                failures += int(status == "FAILED")
+                continue
         regions = consensus(peak_files, minimum)
         if not regions:
             reason = "no intervals meet biological support"
             status = "FAILED" if args.require_all else "SKIPPED"
             (outdir / f"{status}.json").write_text(json.dumps({"status": status, "reason": reason}, indent=2) + "\n")
-            summary.append({"cohort_id": cohort_id, "status": status, "regions": 0, "reason": reason})
+            summary.append({"cohort_id": cohort_id, "status": status, "total_samples": len(members),
+                            "successful_peak_samples": len(peak_files), "excluded_samples": len(excluded),
+                            "regions": 0, "reason": reason})
             failures += int(status == "FAILED")
             continue
         bed = outdir / f"{cohort_id}.{caller}.{peak_class}.support-ge{minimum}.consensus.bed"
@@ -135,10 +184,14 @@ def main() -> int:
             handle.write("region_id\tchrom\tstart\tend\tmaximum_support\n")
             for index, (chrom, start, end, support) in enumerate(regions, 1):
                 handle.write(f"{cohort_id}.region{index:07d}\t{chrom}\t{start}\t{end}\t{support}\n")
-        summary.append({"cohort_id": cohort_id, "status": "SUCCESS", "regions": len(regions), "reason": "."})
+        summary.append({"cohort_id": cohort_id, "status": "SUCCESS", "total_samples": len(members),
+                        "successful_peak_samples": len(peak_files), "excluded_samples": len(excluded),
+                        "regions": len(regions), "reason": "."})
     summary_path = args.output_root / "consensus_status.tsv"
     with summary_path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=["cohort_id", "status", "regions", "reason"], delimiter="\t", lineterminator="\n")
+        writer = csv.DictWriter(handle, fieldnames=["cohort_id", "status", "total_samples",
+                                "successful_peak_samples", "excluded_samples", "regions", "reason"],
+                                delimiter="\t", lineterminator="\n")
         writer.writeheader()
         writer.writerows(summary)
     return 1 if failures else 0

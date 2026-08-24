@@ -5,6 +5,13 @@ Sample files use `<output_prefix>.bioR<replicate>`. Cohort IDs contain a readabl
 prefix and an eight-character SHA-256 suffix; the complete key is retained in
 `cohort_manifest.tsv`.
 
+Per-caller results are recorded in
+`05_peaks/per_sample/<sample_key>/caller_status.tsv`; the stable run-wide table
+is `05_peaks/per_sample/peakcall_status.tsv`. A continuation-mode exclusion from
+consensus is recorded under each cohort as `excluded_peak_samples.tsv`. These
+records distinguish a biological zero-peak result (`EMPTY`) from a caller
+execution failure (`ERROR`) and must be reviewed with the ordinary QC outputs.
+
 ## Output map
 
 ```text

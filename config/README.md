@@ -14,6 +14,15 @@ bigWigs and does not perform normalization.
 The examples contain illustrative `/data` and `/refs` paths and are not directly
 executable. `cutrun_se.csv` requires `PEAK_CALLERS=macs3`.
 
+Peak-caller fault handling is explicit. `PEAKCALL_FAILURE_POLICY=continue`
+records each enabled caller as `SUCCESS`, `EMPTY`, or `ERROR`, keeps processing
+unaffected samples, and excludes only failed/empty primary peak contributions
+from consensus construction. A cohort continues when at least
+`CONSENSUS_MIN_BIOLOGICAL_SAMPLES` successful primary peak sets remain. Use
+`PEAKCALL_FAILURE_POLICY=fail` for strict fail-fast operation. In either mode,
+`ALLOW_EMPTY_PEAKS` controls whether a zero-peak caller result is accepted or
+flagged as a problem; it never fabricates peaks.
+
 Preprocessing parallelism is controlled at two levels:
 
 - `QC_SAMPLE_PARALLEL_JOBS` limits concurrent biological-library workers;

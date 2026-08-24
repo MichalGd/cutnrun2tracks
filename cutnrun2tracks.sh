@@ -158,4 +158,11 @@ fi
 python3 "$SCRIPT_DIR/scripts/checkpoint.py" write --checkpoint "$OUTPUT_DIR/.checkpoints/finalize.json" --stage finalize \
     --signature "$RUN_SIGNATURE" --outputs "$OUTPUT_DIR/00_metadata/final_checksums.sha256"
 if [[ "$STOP_AFTER" == "finalize" ]]; then echo "Stopped after finalize"; exit 0; fi
-echo "cutnrun2tracks $VERSION completed successfully: $OUTPUT_DIR"
+if grep -q '^COMPLETED_WITH_WARNINGS' "$OUTPUT_DIR/05_peaks/per_sample/stage_status.tsv" 2>/dev/null || \
+    awk -F '\t' 'NR>1 && $2!="SUCCESS" {found=1} END{exit !found}' \
+        "$OUTPUT_DIR/05_peaks/consensus/consensus_status.tsv" 2>/dev/null || \
+    awk 'NR>1 {found=1} END{exit !found}' "$OUTPUT_DIR/10_reports/warning_summary.tsv" 2>/dev/null; then
+    echo "cutnrun2tracks $VERSION completed with warnings: $OUTPUT_DIR"
+else
+    echo "cutnrun2tracks $VERSION completed successfully: $OUTPUT_DIR"
+fi

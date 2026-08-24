@@ -107,10 +107,23 @@ if is_true "$RUN_ATAQV_QC"; then
         fi
         peak="${OUTPUT_DIR}/05_peaks/per_sample/${sample_key}/${primary_caller}/${sample_key}.${primary_caller}.${primary_class}.bed"
         json="$qc_root/experimental_ATAC_derived_ataqv/${sample_key}.ataqv.json.gz"
-        ataqv --threads "$THREADS_ATAQV" --name "$sample_key" --metrics-file "$json" --tss-file "$tss" \
+        peak_metadata="${OUTPUT_DIR}/05_peaks/per_sample/${sample_key}/peakcall_metadata.tsv"
+        peak_status="$(awk -F '\t' 'NR==2 {print $5}' "$peak_metadata" 2>/dev/null || true)"
+        if [[ "$peak_status" != "SUCCESS" ]]; then
+            printf '{"status":"SKIPPED","reason":"primary peak status %s"}\n' "${peak_status:-MISSING}" \
+                > "$qc_root/experimental_ATAC_derived_ataqv/${sample_key}.SKIPPED.json"
+            warn "ataqv skipped for $sample_key because primary peak status is ${peak_status:-MISSING}"
+            continue
+        fi
+        if ! ataqv --threads "$THREADS_ATAQV" --name "$sample_key" --metrics-file "$json" --tss-file "$tss" \
             --tss-extension "$ATAQV_TSS_EXTENSION" --autosomal-reference-file "$autosomes" --ignore-read-groups \
             --peak-file "$peak" --excluded-region-file "$blacklist" "$organism" "$(analysis_bam_path "$sample_key")" \
-            >"${OUTPUT_DIR}/logs/qc/${sample_key}.ataqv.log" 2>&1
+            >"${OUTPUT_DIR}/logs/qc/${sample_key}.ataqv.log" 2>&1; then
+            printf '{"status":"FAILED","reason":"ataqv command failed"}\n' \
+                > "$qc_root/experimental_ATAC_derived_ataqv/${sample_key}.FAILED.json"
+            warn "ataqv failed for $sample_key"
+            continue
+        fi
         json_files+=("$json")
     done < "$SAMPLE_MANIFEST"
     if is_true "$GENERATE_ATAQV_VIEWER" && (( ${#json_files[@]} > 0 )); then

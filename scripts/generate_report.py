@@ -37,12 +37,20 @@ def main() -> int:
     cohorts = table(root / "00_metadata/cohort_manifest.tsv")
     counts = table(root / "06_qc/alignment_and_complexity/observation_counts.tsv")
     consensus = table(root / "05_peaks/consensus/consensus_status.tsv")
+    peakcalls = table(root / "05_peaks/per_sample/peakcall_status.tsv")
     metagene = table(root / "06_qc/metagene/artifacts.tsv")
     warnings = []
     for failure in root.rglob("FAILED.json"):
         warnings.append({"severity": "ERROR", "item": str(failure.relative_to(root))})
     for skipped in root.rglob("SKIPPED.json"):
         warnings.append({"severity": "INFO", "item": str(skipped.relative_to(root))})
+    for row in peakcalls:
+        if row.get("status") != "SUCCESS" or row.get("caller_warnings") not in {"", "."}:
+            warnings.append({
+                "severity": "WARNING",
+                "item": (f"peakcalling:{row.get('sample_key', '?')}:"
+                         f"{row.get('status', '?')}:{row.get('caller_warnings', '.')}")
+            })
     with (report_dir / "warning_summary.tsv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=["severity", "item"], delimiter="\t", lineterminator="\n")
         writer.writeheader(); writer.writerows(warnings)
@@ -50,6 +58,10 @@ def main() -> int:
         {"metric": "biological_libraries", "value": str(len(samples))},
         {"metric": "target_cohorts", "value": str(len(cohorts))},
         {"metric": "consensus_success", "value": str(sum(row.get("status") == "SUCCESS" for row in consensus))},
+        {"metric": "peakcall_samples_with_warnings", "value": str(sum(
+            row.get("status") != "SUCCESS" or row.get("caller_warnings") not in {"", "."}
+            for row in peakcalls
+        ))},
         {"metric": "warnings_and_skips", "value": str(len(warnings))},
         {"metric": "metagene_plot_tasks", "value": str(len(metagene))},
     ]
@@ -62,6 +74,7 @@ def main() -> int:
 <p>QC thresholds are descriptive. Different antibody targets are never normalized together.</p>
 <h2>Run summary</h2>{html_table(summary)}<h2>Cohorts</h2>{html_table(cohorts)}
 <h2>Observation counts</h2>{html_table(counts)}<h2>Consensus status</h2>{html_table(consensus)}
+<h2>Per-sample peak-calling status</h2>{html_table(peakcalls)}
 <h2>Metagene aggregate-signal outputs</h2>{html_table(metagene)}
 <h2>Warnings and skips</h2>{html_table(warnings)}</body></html>"""
     (report_dir / "pipeline_report.html").write_text(document, encoding="utf-8")

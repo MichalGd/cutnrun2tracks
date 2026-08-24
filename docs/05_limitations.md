@@ -16,7 +16,7 @@ numerical stability, not biological validity. Residual bacterial DNA is not
 automatically a fixed external standard. Global occupancy changes require a
 validated spike design or another justified normalization strategy.
 
-Version 0.2.3 does not support SEACR for SE, mixed layouts/genomes by default,
+Version 0.2.4 does not support SEACR for SE, mixed layouts/genomes by default,
 arbitrary blocking factors in DiffBind, or multi-condition target-control
 interaction models. ataqv remains disabled and, if enabled, is stored under
 `experimental_ATAC_derived_ataqv` without CUT pass/fail interpretation.

@@ -46,6 +46,24 @@ class InterfaceTests(unittest.TestCase):
                 self.assertIn(f"{key}=true", resolved)
             self.assertIn("THREADS_FASTQC=10", resolved)
             self.assertIn("THREADS_TRIMGALORE=8", resolved)
+            self.assertIn("PEAKCALL_FAILURE_POLICY=continue", resolved)
+
+    def test_config_rejects_unknown_peakcall_failure_policy(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            text = (ROOT / "config/config.conf.template").read_text(encoding="utf-8")
+            text = text.replace("/absolute/path/to/samplesheet.csv", str(directory / "samples.csv"))
+            text = text.replace("/absolute/path/to/results", str(directory / "results"))
+            text = text.replace("PEAKCALL_FAILURE_POLICY=continue", "PEAKCALL_FAILURE_POLICY=ignore")
+            config = directory / "config.conf"
+            config.write_text(text, encoding="utf-8")
+            result = subprocess.run([
+                sys.executable, str(ROOT / "scripts/validate_config.py"), str(config),
+                "--template", str(ROOT / "config/config.conf.template"),
+                "--write-shell", str(directory / "resolved.conf"),
+            ], text=True, capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("PEAKCALL_FAILURE_POLICY must be one of", result.stderr)
 
     def test_config_rejects_nonpositive_preprocessing_threads(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

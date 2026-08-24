@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.4 - 2026-08-24
+
+- Added configurable `PEAKCALL_FAILURE_POLICY=continue|fail`; continuation mode
+  records per-caller `SUCCESS`, `EMPTY`, or `ERROR` results without allowing one
+  failed sample or auxiliary caller to terminate all other samples.
+- Made consensus construction exclude only failed/empty primary peak
+  contributions, proceed when enough successful biological samples remain, and
+  record every exclusion and reason in machine-readable TSV files.
+- Preserved all BAM, coverage, QC, metagene, and downstream consensus-counting
+  eligibility for a peak-call-excluded sample; peak failure is reported and is
+  not treated as an automatic biological QC exclusion.
+- Added completed-with-warnings reporting and regression coverage for both
+  continuation and strict peak-calling policies.
+
 ## 0.2.3 - 2026-08-24
 
 - Scoped each filtering temporary directory and its cleanup trap to a

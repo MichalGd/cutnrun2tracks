@@ -34,6 +34,60 @@ class ScientificHelperTests(unittest.TestCase):
             result = module.consensus([("A", a), ("B", b), ("C", c)], 2)
             self.assertEqual(result, [("chr1", 20, 40, 3)])
 
+    def test_consensus_excludes_failed_peak_samples_and_continues(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            output_root = directory / "05_peaks/consensus"
+            sample_manifest = directory / "sample_manifest.tsv"
+            cohort_manifest = directory / "cohort_manifest.tsv"
+            sample_manifest.write_text(
+                "sample_key\tis_control\tcohort_id\n"
+                "A\tFALSE\tC1\nB\tFALSE\tC1\nC\tFALSE\tC1\n",
+                encoding="utf-8",
+            )
+            cohort_manifest.write_text(
+                "cohort_id\tprimary_peak_caller\tprimary_peak_class\n"
+                "C1\tmacs3\tbroad\n",
+                encoding="utf-8",
+            )
+            for sample, status, intervals, reason in (
+                ("A", "SUCCESS", "chr1\t10\t30\n", "."),
+                ("B", "SUCCESS", "chr1\t20\t40\n", "."),
+                ("C", "ERROR", "", "primary_caller_error"),
+            ):
+                root = directory / "05_peaks/per_sample" / sample
+                peak_dir = root / "macs3"
+                peak_dir.mkdir(parents=True)
+                (peak_dir / f"{sample}.macs3.broad.bed").write_text(intervals, encoding="utf-8")
+                (root / "peakcall_metadata.tsv").write_text(
+                    "sample_key\tcontrol_key\tprimary_caller\tprimary_class\tstatus\tprimary_peak_count\tcaller_warnings\treason\n"
+                    f"{sample}\t.\tmacs3\tbroad\t{status}\t{int(bool(intervals))}\t.\t{reason}\n",
+                    encoding="utf-8",
+                )
+            result = subprocess.run([
+                sys.executable, str(ROOT / "scripts/build_consensus.py"),
+                "--sample-manifest", str(sample_manifest),
+                "--cohort-manifest", str(cohort_manifest),
+                "--output-root", str(output_root),
+                "--minimum-support", "2",
+            ], text=True, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            consensus_files = list(output_root.rglob("*.consensus.bed"))
+            self.assertEqual(len(consensus_files), 1)
+            self.assertEqual(consensus_files[0].read_text(encoding="utf-8").split("\t")[:3],
+                             ["chr1", "20", "30"])
+            with (output_root / "consensus_status.tsv").open(encoding="utf-8", newline="") as handle:
+                summary = next(csv.DictReader(handle, delimiter="\t"))
+            self.assertEqual(summary["status"], "SUCCESS")
+            self.assertEqual(summary["successful_peak_samples"], "2")
+            self.assertEqual(summary["excluded_samples"], "1")
+            exclusion_files = list(output_root.rglob("excluded_peak_samples.tsv"))
+            with exclusion_files[0].open(encoding="utf-8", newline="") as handle:
+                exclusions = list(csv.DictReader(handle, delimiter="\t"))
+            self.assertEqual(exclusions, [{
+                "sample_key": "C", "status": "ERROR", "reason": "primary_caller_error"
+            }])
+
     def test_spikein_formula_and_thresholds(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)

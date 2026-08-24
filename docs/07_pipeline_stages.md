@@ -14,8 +14,8 @@ values for `--from-stage` and `--stop-after`.
 | 3 | `alignment` | Align to the host reference with Bowtie2; create the optional competitive host-plus-spike alignment | `03_alignment/sorted/` |
 | 4 | `filtering` | Mark duplicates once; apply primary/canonical/blacklist and MAPQ filters; expose permissive, intermediate, q30 duplicate-retained, and stringent BAM branches | `03_alignment/analysis/` |
 | 5 | `cpm` | Create fragment-aware PE or read-aware SE CPM bedGraph/bigWig tracks and normalization metadata | `04_tracks/cpm/` |
-| 6 | `peakcalling` | Run enabled PE SEACR and/or layout-aware MACS3 modes with the resolved matched control | `05_peaks/per_sample/` |
-| 7 | `consensus` | Build caller/peak-class consensus sets within isolated target cohorts using biological-sample support | `05_peaks/consensus/` |
+| 6 | `peakcalling` | Run enabled PE SEACR and/or layout-aware MACS3 modes, recording per-sample/caller `SUCCESS`, `EMPTY`, or `ERROR` status under the configured failure policy | `05_peaks/per_sample/` |
+| 7 | `consensus` | Build caller/peak-class consensus sets from successful primary peak sets, record exclusions, and enforce biological-sample support | `05_peaks/consensus/` |
 | 8 | `spikein` | Count retained spike observations, enforce QC thresholds, and create calibrated host plus spike-control tracks when enabled | `04_tracks/spikein/` |
 | 9 | `normalized_tracks` | Build consensus count tables and the enabled DESeq2-consensus and robust-CPM coverage families | `04_tracks/` |
 | 10 | `metagene` | Select upstream-normalized tracks and optionally render TSS, TES, and scaled-gene-body profile/heatmap pairs | `06_qc/metagene/status.tsv` |

@@ -1,4 +1,4 @@
-# cutnrun2tracks 0.2.3 configuration
+# cutnrun2tracks 0.2.4 configuration
 # Plain KEY=VALUE syntax only. Shell expressions and command substitutions are rejected.
 
 # Required run inputs
@@ -73,6 +73,9 @@ REQUIRE_MATCHED_CONTROL=true
 ALLOW_SHARED_CONTROLS=false
 ALLOW_CONTROL_FREE_PEAKCALL=false
 ALLOW_EMPTY_PEAKS=false
+# fail: any enabled caller error stops peak calling; continue: record the
+# per-sample error and continue with unaffected samples and cohorts.
+PEAKCALL_FAILURE_POLICY=continue
 SEACR_COMMAND=SEACR_1.3.sh
 SEACR_MODE=stringent
 SEACR_CONTROL_NORMALIZATION=norm

@@ -83,6 +83,7 @@ ENUMS = {
     "CONTROL_DEFAULT_DUPLICATE_POLICY": {"retain", "remove"},
     "SPIKEIN_DUPLICATE_POLICY": {"retain", "remove"},
     "PRIMARY_PEAK_CALLER": {"auto", "seacr", "macs3"},
+    "PEAKCALL_FAILURE_POLICY": {"fail", "continue"},
     "SEACR_MODE": {"stringent", "relaxed"},
     "SEACR_CONTROL_NORMALIZATION": {"norm", "non"},
     "MACS3_KEEP_DUP": {"all", "auto"},

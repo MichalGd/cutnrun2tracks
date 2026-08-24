@@ -1,4 +1,4 @@
-# cutnrun2tracks 0.2.3
+# cutnrun2tracks 0.2.4
 
 `cutnrun2tracks` is a samplesheet-driven Bash workflow for paired-end and
 single-end CUT&RUN and CUT&Tag data. It provides assay-aware alignment,
@@ -160,7 +160,7 @@ git clone https://github.com/MichalGd/cutnrun2tracks.git
 cd cutnrun2tracks
 
 mamba env create -f environment.yml
-conda activate cutnrun2tracks-0.2.3
+conda activate cutnrun2tracks-0.2.4
 
 mkdir -p /path/to/project/config
 cp config/config.conf.template /path/to/project/config/config.conf
@@ -194,7 +194,7 @@ Create the environment with Mamba or Conda:
 
 ```bash
 mamba env create -f environment.yml
-conda activate cutnrun2tracks-0.2.3
+conda activate cutnrun2tracks-0.2.4
 ```
 
 SEACR 1.3 is not installed by the Conda environment. Install it separately from
@@ -316,8 +316,8 @@ for troubleshooting or planned partial reruns. See
 | 3 | `alignment` | Bowtie2 host alignment and optional competitive spike alignment |
 | 4 | `filtering` | Mark duplicates; produce four MAPQ/duplicate-policy BAM branches |
 | 5 | `cpm` | Per-sample fragment/read CPM bigWig and bedGraph tracks |
-| 6 | `peakcalling` | Matched-control SEACR and/or MACS3 peak calls |
-| 7 | `consensus` | Target-specific, biological-support-filtered consensus peaks |
+| 6 | `peakcalling` | Matched-control SEACR and/or MACS3 calls with per-sample fault isolation |
+| 7 | `consensus` | Target-specific consensus from successful primary peak sets, with exclusions reported |
 | 8 | `spikein` | Spike-in counts, QC, calibrated host tracks, and control tracks |
 | 9 | `normalized_tracks` | DESeq2-consensus and robust-CPM track families |
 | 10 | `metagene` | Optional TSS, TES, and scaled-gene-body plots and heatmaps |

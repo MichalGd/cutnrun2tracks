@@ -35,6 +35,6 @@ summary, and principal output tree.
 - [Contribution requirements](../CONTRIBUTING.md)
 - [Metagene shared-module interface](../common/metagene/README.md)
 
-Documentation describes version 0.2.3 unless a page explicitly says otherwise.
+Documentation describes version 0.2.4 unless a page explicitly says otherwise.
 The executable behavior is defined by `cutnrun2tracks.sh`, the scripts under
 `scripts/`, and the validated configuration template.
