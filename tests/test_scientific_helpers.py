@@ -67,6 +67,42 @@ class ScientificHelperTests(unittest.TestCase):
                 "--stage", "test", "--signature", signature])
             self.assertNotEqual(invalid.returncode, 0)
 
+    def test_checkpoint_adopts_valid_prior_stage_outputs(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            output = directory / "output.txt"
+            output.write_text("validated prior result", encoding="utf-8")
+            checkpoint = directory / "checkpoint.json"
+            old_signature = "old-signature"
+            new_signature = "new-signature"
+            subprocess.check_call([
+                sys.executable, str(ROOT / "scripts/checkpoint.py"), "write",
+                "--checkpoint", str(checkpoint), "--stage", "alignment",
+                "--signature", old_signature, "--outputs", str(output),
+            ])
+            adopted = subprocess.run([
+                sys.executable, str(ROOT / "scripts/checkpoint.py"), "adopt",
+                "--checkpoint", str(checkpoint), "--stage", "alignment",
+                "--signature", new_signature,
+            ])
+            self.assertEqual(adopted.returncode, 0)
+            valid = subprocess.run([
+                sys.executable, str(ROOT / "scripts/checkpoint.py"), "check",
+                "--checkpoint", str(checkpoint), "--stage", "alignment",
+                "--signature", new_signature,
+            ])
+            self.assertEqual(valid.returncode, 0)
+            payload = json.loads(checkpoint.read_text(encoding="utf-8"))
+            self.assertEqual(payload["signature"], new_signature)
+            self.assertEqual(payload["signature_adoptions"][-1]["from"], old_signature)
+            output.write_text("changed", encoding="utf-8")
+            rejected = subprocess.run([
+                sys.executable, str(ROOT / "scripts/checkpoint.py"), "adopt",
+                "--checkpoint", str(checkpoint), "--stage", "alignment",
+                "--signature", "another-signature",
+            ])
+            self.assertNotEqual(rejected.returncode, 0)
+
 
 if __name__ == "__main__":
     unittest.main()

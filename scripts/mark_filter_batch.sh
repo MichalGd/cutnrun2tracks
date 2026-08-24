@@ -18,19 +18,23 @@ filter_branch() {
     local tmp canonical_file include=0 exclude contigs=()
     tmp="$(mktemp -d "${OUTPUT_DIR}/03_alignment/filtered/.filter.XXXXXX")"
     trap 'rm -rf "$tmp"' RETURN
+    rm -f "$output" "${output}.bai" "${output%.bam}.bai"
     if [[ "$layout" == "PE" ]]; then
         include=2
         [[ "$remove_duplicates" == "true" ]] && exclude=3852 || exclude=2828
     else
         [[ "$remove_duplicates" == "true" ]] && exclude=3844 || exclude=2820
     fi
-    samtools view -@ "$THREADS_SAMTOOLS" -b -q "$mapq" -f "$include" -F "$exclude" -o "$tmp/flags.bam" "$marked"
     canonical_file="$(reference_value CANONICAL_CONTIGS "$genome")"
     mapfile -t contigs < <(awk -v remove_mito="$REMOVE_MITO" '
         NF>=2 && !(remove_mito=="true" && ($1=="chrM" || $1=="MT" || $1=="M")) {print $1}
         NF==1 && !(remove_mito=="true" && ($1=="chrM" || $1=="MT" || $1=="M")) {print $1}
     ' "$canonical_file")
-    samtools view -@ "$THREADS_SAMTOOLS" -b -o "$tmp/canonical.bam" "$tmp/flags.bam" "${contigs[@]}"
+    (( ${#contigs[@]} > 0 )) || die "canonical contig list is empty: $canonical_file"
+    # Region selection requires an indexed input. Apply flags, MAPQ, and
+    # canonical-contig selection in one pass from the already indexed marked BAM.
+    samtools view -@ "$THREADS_SAMTOOLS" -b -q "$mapq" -f "$include" -F "$exclude" \
+        -o "$tmp/canonical.bam" "$marked" "${contigs[@]}"
     bedtools intersect -v -abam "$tmp/canonical.bam" -b "$blacklist" > "$tmp/no_blacklist.bam"
     if [[ "$layout" == "PE" ]]; then
         samtools sort -n -@ "$THREADS_SAMTOOLS" -o "$tmp/name.bam" "$tmp/no_blacklist.bam"
@@ -55,10 +59,18 @@ worker() {
     local marked="${OUTPUT_DIR}/03_alignment/marked/${key}.host.marked.bam"
     local metrics="${OUTPUT_DIR}/03_alignment/metrics/${key}.duplicate_metrics.txt"
     [[ -s "$sorted" ]] || die "sorted BAM missing: $sorted"
-    run_logged "$PICARD_COMMAND" MarkDuplicates I="$sorted" O="$marked" M="$metrics" \
-        REMOVE_DUPLICATES=false ASSUME_SORTED=true VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \
-        >"${OUTPUT_DIR}/logs/filtering/${key}.picard.log" 2>&1
+    local picard_log="${OUTPUT_DIR}/logs/filtering/${key}.picard.log"
+    if [[ -s "$marked" && -s "$metrics" ]] && \
+        samtools quickcheck "$marked" && samtools idxstats "$marked" >/dev/null 2>&1; then
+        note "Reusing validated marked BAM for $key" >> "$picard_log"
+    else
+        rm -f "$marked" "${marked}.bai" "${marked%.bam}.bai" "$metrics"
+        run_logged "$PICARD_COMMAND" MarkDuplicates I="$sorted" O="$marked" M="$metrics" \
+            REMOVE_DUPLICATES=false ASSUME_SORTED=true VALIDATION_STRINGENCY=SILENT CREATE_INDEX=true \
+            >"$picard_log" 2>&1
+    fi
     samtools quickcheck "$marked"
+    samtools idxstats "$marked" >/dev/null
     local q0r="${OUTPUT_DIR}/03_alignment/filtered/q0_dup-retained/${key}.host.q0.dup-retained.bam"
     local q0d="${OUTPUT_DIR}/03_alignment/filtered/q0_dup-removed/${key}.host.q0.dup-removed.bam"
     local q30r="${OUTPUT_DIR}/03_alignment/filtered/q30_dup-retained/${key}.host.q30.dup-retained.bam"

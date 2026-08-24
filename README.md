@@ -1,4 +1,4 @@
-# cutnrun2tracks 0.2.1
+# cutnrun2tracks 0.2.2
 
 `cutnrun2tracks` is a samplesheet-driven Bash workflow for paired-end and
 single-end CUT&RUN and CUT&Tag data. It provides assay-aware alignment,
@@ -160,7 +160,7 @@ git clone https://github.com/MichalGd/cutnrun2tracks.git
 cd cutnrun2tracks
 
 mamba env create -f environment.yml
-conda activate cutnrun2tracks-0.2.1
+conda activate cutnrun2tracks-0.2.2
 
 mkdir -p /path/to/project/config
 cp config/config.conf.template /path/to/project/config/config.conf
@@ -194,7 +194,7 @@ Create the environment with Mamba or Conda:
 
 ```bash
 mamba env create -f environment.yml
-conda activate cutnrun2tracks-0.2.1
+conda activate cutnrun2tracks-0.2.2
 ```
 
 SEACR 1.3 is not installed by the Conda environment. Install it separately from
@@ -278,13 +278,21 @@ hashes of declared outputs. A changed configuration, samplesheet, workflow
 version, script, shared module, reference manifest, or declared output
 invalidates the affected resume state.
 
-Force a stage and every later stage:
+Reuse validated outputs before a stage, then force that stage and every later
+stage:
 
 ```bash
 bash cutnrun2tracks.sh \
     --config /absolute/path/to/config.conf \
     --from-stage qc
 ```
+
+With `--from-stage`, every earlier checkpoint is revalidated against its stored
+file sizes and SHA-256 hashes before its signature is explicitly adopted into
+the current run. A missing or changed earlier output stops recovery. The named
+stage and all later stages always rerun. This explicit recovery mode is suitable
+after a code-only repair that does not alter earlier-stage outputs; choose an
+earlier starting stage if the change could affect them.
 
 Stop cleanly after a named stage:
 

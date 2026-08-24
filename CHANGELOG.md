@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.2 - 2026-08-24
+
+- Fixed canonical-contig filtering by applying region selection directly to
+  the indexed duplicate-marked BAM instead of an unindexed temporary BAM.
+- Reused validated marked BAMs on filtering recovery, avoiding unnecessary
+  repeated Picard duplicate marking.
+- Made `--from-stage` validate and adopt unchanged earlier-stage checkpoints
+  across a workflow signature update, while still forcing the named and later
+  stages.
+- Added regression coverage for canonical filtering and checkpoint adoption.
+
 ## 0.2.1 - 2026-08-24
 
 - Added validated `THREADS_FASTQC` and `THREADS_TRIMGALORE` settings and passed

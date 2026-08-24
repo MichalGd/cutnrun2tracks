@@ -68,13 +68,19 @@ bash cutnrun2tracks.sh \
 
 ## Controlled reruns
 
-Force one stage and all later stages even when valid checkpoints exist:
+Reuse hash-validated outputs before one stage, then force that stage and all
+later stages:
 
 ```bash
 bash cutnrun2tracks.sh \
     --config /absolute/path/to/config.conf \
     --from-stage normalized_tracks
 ```
+
+Earlier checkpoint signatures are adopted only after their recorded output
+sizes and SHA-256 hashes pass validation. Adoption is recorded in each JSON
+checkpoint. Missing or changed earlier outputs stop the run. Use this explicit
+override only when the change cannot affect stages before the selected boundary.
 
 Stop after a named stage:
 
@@ -84,7 +90,7 @@ bash cutnrun2tracks.sh \
     --stop-after qc
 ```
 
-Do not manually copy a checkpoint between runs. Its signature covers the
+Do not manually copy or edit a checkpoint between runs. Its signature covers the
 workflow version, scripts, shared modules, resolved configuration, sanitized
 samplesheet, and reference manifest, and its output hashes are specific to the
 run directory.

@@ -40,11 +40,20 @@ Run `--plan` to validate the metadata model and inspect
 `00_metadata/planned_stages.tsv` without checking files/tools. Run
 `--preflight-only` for the complete input, tool, and reference audit.
 
-Force a stage and all later stages:
+Reuse validated outputs before a stage, then force that stage and all later
+stages:
 
 ```bash
 bash cutnrun2tracks.sh --config /path/to/config.conf --from-stage qc
 ```
+
+This is an explicit recovery override. Before the requested stage, each existing
+checkpoint is validated against its stored output sizes and SHA-256 hashes and
+its signature adoption is recorded in the checkpoint JSON. If any earlier
+checkpoint or output is missing or changed, recovery stops instead of silently
+rerunning or accepting it. The named stage and all later stages always rerun.
+Select a starting stage at or before the earliest output that could be affected
+by the configuration or code change.
 
 Stop after a stage without editing the workflow:
 

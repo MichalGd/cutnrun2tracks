@@ -87,6 +87,44 @@ def command_check(args: argparse.Namespace) -> int:
         return 1
 
 
+def command_adopt(args: argparse.Namespace) -> int:
+    """Adopt validated prior-stage outputs into a new run signature."""
+    try:
+        payload = json.loads(args.checkpoint.read_text(encoding="utf-8"))
+        if payload.get("stage") != args.stage:
+            return 1
+        outputs = payload.get("outputs", [])
+        if not outputs:
+            return 1
+        for item in outputs:
+            path = Path(item["path"])
+            if (
+                not path.is_file()
+                or path.stat().st_size != item["size"]
+                or sha256(path) != item["sha256"]
+            ):
+                return 1
+        previous = payload.get("signature")
+        adopted_utc = datetime.now(timezone.utc).isoformat()
+        payload.setdefault("signature_adoptions", []).append(
+            {
+                "from": previous,
+                "to": args.signature,
+                "adopted_utc": adopted_utc,
+                "reason": "explicit --from-stage prior-stage reuse",
+            }
+        )
+        payload["signature"] = args.signature
+        temporary = args.checkpoint.with_suffix(
+            args.checkpoint.suffix + f".tmp.{os.getpid()}"
+        )
+        temporary.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        os.replace(temporary, args.checkpoint)
+        return 0
+    except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
+        return 1
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
@@ -104,6 +142,11 @@ def main() -> int:
     check.add_argument("--stage", required=True)
     check.add_argument("--signature", required=True)
     check.set_defaults(function=command_check)
+    adopt = sub.add_parser("adopt")
+    adopt.add_argument("--checkpoint", type=Path, required=True)
+    adopt.add_argument("--stage", required=True)
+    adopt.add_argument("--signature", required=True)
+    adopt.set_defaults(function=command_adopt)
     args = parser.parse_args()
     try:
         return args.function(args)

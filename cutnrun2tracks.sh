@@ -20,7 +20,7 @@ Options:
   --output-dir DIR      Override OUTPUT_DIR from config
   --plan                Validate metadata and write a stage plan; do not require bioinformatics tools
   --preflight-only      Validate metadata, tools, and references, then stop
-  --from-stage NAME     Re-run NAME and all later stages even if checkpoints are valid
+  --from-stage NAME     Reuse validated earlier outputs; re-run NAME and all later stages
   --stop-after NAME     Stop after the named stage
   -h, --help            Show this help
 
@@ -101,14 +101,27 @@ printf 'run_id\tworkflow_version\trun_signature\tassay_profile\tspikein_mode\n%s
 : > "$OUTPUT_DIR/00_metadata/commands.log"
 
 force=false
+before_from_stage=false
+[[ -n "$FROM_STAGE" ]] && before_from_stage=true
 run_stage() {
     local stage="$1"
     local command="$2"
     local checkpoint="$OUTPUT_DIR/.checkpoints/${stage}.json"
     shift 2
     local outputs=("$@")
-    if [[ "$stage" == "$FROM_STAGE" ]]; then force=true; fi
-    if ! is_true "$force" && python3 "$SCRIPT_DIR/scripts/checkpoint.py" check --checkpoint "$checkpoint" --stage "$stage" --signature "$RUN_SIGNATURE"; then
+    if [[ "$stage" == "$FROM_STAGE" ]]; then
+        before_from_stage=false
+        force=true
+    fi
+    if is_true "$before_from_stage"; then
+        if python3 "$SCRIPT_DIR/scripts/checkpoint.py" adopt --checkpoint "$checkpoint" \
+            --stage "$stage" --signature "$RUN_SIGNATURE"; then
+            echo "=== [$stage] REUSED: validated prior-stage outputs (--from-stage $FROM_STAGE) ==="
+        else
+            echo "ERROR: cannot reuse invalid or missing prior-stage checkpoint: $stage" >&2
+            exit 1
+        fi
+    elif ! is_true "$force" && python3 "$SCRIPT_DIR/scripts/checkpoint.py" check --checkpoint "$checkpoint" --stage "$stage" --signature "$RUN_SIGNATURE"; then
         echo "=== [$stage] SKIPPED: valid signature-and-output checkpoint ==="
     else
         echo "=== [$stage] START ==="

@@ -2,7 +2,8 @@
 
 The synthetic suite covers config safety, exact control resolution, SE/SEACR
 rejection, cross-antibody cohort isolation, consensus biological support,
-spike-in formulas/thresholds, and checkpoint invalidation. Before release, add
+spike-in formulas/thresholds, checkpoint invalidation/adoption, and the indexed
+input requirement for canonical BAM filtering. Before release, add
 Linux integration fixtures for:
 
 - CUT&RUN/CUT&Tag PE narrow and broad targets;

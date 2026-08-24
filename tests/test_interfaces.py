@@ -14,6 +14,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class InterfaceTests(unittest.TestCase):
+    def test_filtering_uses_indexed_marked_bam_for_region_selection(self) -> None:
+        script = (ROOT / "scripts/mark_filter_batch.sh").read_text(encoding="utf-8")
+        self.assertNotIn('"$tmp/flags.bam"', script)
+        self.assertIn('"$marked" "${contigs[@]}"', script)
+        self.assertIn("Reusing validated marked BAM", script)
+
     def test_config_template_is_complete_and_safe(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
