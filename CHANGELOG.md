@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.3 - 2026-08-24
+
+- Scoped each filtering temporary directory and its cleanup trap to a
+  subshell, preventing the trap from firing again after its local `tmp`
+  variable had expired when a parallel worker returned.
+- Added an executable filtering-stage regression fixture that exercises all
+  four BAM branches and fails if temporary cleanup leaks into the worker.
+- Documented recovery of fully validated filtering outputs without repeating
+  completed preprocessing, alignment, or filtering work.
+
 ## 0.2.2 - 2026-08-24
 
 - Fixed canonical-contig filtering by applying region selection directly to

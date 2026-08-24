@@ -19,6 +19,8 @@ class InterfaceTests(unittest.TestCase):
         self.assertNotIn('"$tmp/flags.bam"', script)
         self.assertIn('"$marked" "${contigs[@]}"', script)
         self.assertIn("Reusing validated marked BAM", script)
+        self.assertNotIn("trap 'rm -rf \"$tmp\"' RETURN", script)
+        self.assertIn("trap 'rm -rf -- \"$tmp\"' EXIT", script)
 
     def test_config_template_is_complete_and_safe(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

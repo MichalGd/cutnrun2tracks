@@ -13,11 +13,11 @@ done
 mkdir -p "${OUTPUT_DIR}/03_alignment/marked" "${OUTPUT_DIR}/03_alignment/analysis" \
     "${OUTPUT_DIR}/03_alignment/metrics" "${OUTPUT_DIR}/logs/filtering"
 
-filter_branch() {
+filter_branch() (
     local marked="$1" output="$2" layout="$3" genome="$4" blacklist="$5" mapq="$6" remove_duplicates="$7"
     local tmp canonical_file include=0 exclude contigs=()
     tmp="$(mktemp -d "${OUTPUT_DIR}/03_alignment/filtered/.filter.XXXXXX")"
-    trap 'rm -rf "$tmp"' RETURN
+    trap 'rm -rf -- "$tmp"' EXIT
     rm -f "$output" "${output}.bai" "${output%.bam}.bai"
     if [[ "$layout" == "PE" ]]; then
         include=2
@@ -51,7 +51,7 @@ filter_branch() {
     if (( count == 0 )) && ! is_true "$ALLOW_EMPTY_FILTERED_BAM"; then
         die "filtering removed every signal unit: $output"
     fi
-}
+)
 
 worker() {
     local key="$1" layout="$2" genome="$3" duplicate_policy="$4" blacklist="$5"

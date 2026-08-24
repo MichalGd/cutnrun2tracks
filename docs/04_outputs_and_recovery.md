@@ -55,6 +55,16 @@ rerunning or accepting it. The named stage and all later stages always rerun.
 Select a starting stage at or before the earliest output that could be affected
 by the configuration or code change.
 
+If a stage command completes every output but fails during terminal bookkeeping
+before its checkpoint is written, preserve the outputs and validate them with
+the relevant native tools before recovery. A replacement checkpoint may be
+written with `scripts/checkpoint.py write` only after expected file counts,
+indexes, links, and content integrity have all been confirmed and the incident
+has been recorded. Deploy the code correction, then use `--from-stage` on the
+next stage so the replacement checkpoint is explicitly adopted into the new
+workflow signature. Never use this procedure for partial or merely
+size-checked outputs.
+
 Stop after a stage without editing the workflow:
 
 ```bash
