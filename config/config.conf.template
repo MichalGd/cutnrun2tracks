@@ -1,4 +1,4 @@
-# cutnrun2tracks 0.2.6 configuration
+# cutnrun2tracks 0.2.7 configuration
 # Plain KEY=VALUE syntax only. Shell expressions and command substitutions are rejected.
 
 # Required run inputs
@@ -34,6 +34,8 @@ TRIMGALORE_EXTRA_ARGS=
 MIN_TRIMMED_LENGTH=20
 RUN_FASTQC=true
 RUN_MULTIQC=true
+# RUN_MULTIQC controls both the preprocessing FastQC summary and the final
+# unified report over retained workflow logs, QC tables, and custom content.
 THREADS_FASTQC=10
 THREADS_TRIMGALORE=8
 

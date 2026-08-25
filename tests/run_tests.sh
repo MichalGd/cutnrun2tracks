@@ -7,5 +7,6 @@ bash "$ROOT/tests/test_filter_cleanup.sh"
 bash "$ROOT/tests/test_peakcall_tolerance.sh"
 bash "$ROOT/tests/test_normalization_tolerance.sh"
 bash "$ROOT/tests/test_annotation_sorting.sh"
+bash "$ROOT/tests/test_reporting.sh"
 python3 -m unittest discover -s "$ROOT/tests" -p 'test_*.py' -v
 echo "All cutnrun2tracks tests passed"

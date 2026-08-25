@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.2.7 - 2026-08-25
+
+- Added a final unified MultiQC report over the complete retained workflow
+  output, matching the reporting role used by ATACseq2tracks while preserving
+  CUT-specific sample, cohort, peak, normalization, and differential semantics.
+- Added deterministic MultiQC custom-content tables for retained observations,
+  alignment/filtering counts, FRiP, peak calls, consensus sets, normalized-track
+  families, spike-in calibration, differential status, and comparison summaries.
+- Added selected target/control fingerprints, descriptive TSS profiles, and
+  differential PCA/dispersion images as MultiQC custom content while excluding
+  the fragile native deepTools parser; authoritative source files are unchanged.
+- Made the report stage validate its lightweight HTML/TSV outputs and its final
+  MultiQC HTML before cleanup can proceed.
+- Added `utilities/regenerate_reports.sh` to recover the lightweight and unified
+  reports from completed analyses without rerunning upstream stages. A separate
+  report checksum inventory avoids rewriting historical workflow checksums.
+- Expanded the lightweight report to include normalization, differential, and
+  preseq warnings, and added end-to-end reporting regression coverage.
+
 ## 0.2.6 - 2026-08-25
 
 - Fixed nearest-gene annotation failures caused by inconsistent chromosome

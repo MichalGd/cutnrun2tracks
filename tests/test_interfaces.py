@@ -14,6 +14,16 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class InterfaceTests(unittest.TestCase):
+    def test_final_report_runs_unified_multiqc_and_validates_outputs(self) -> None:
+        report = (ROOT / "scripts/report_batch.sh").read_text(encoding="utf-8")
+        unified = (ROOT / "scripts/generate_multiqc_report.sh").read_text(encoding="utf-8")
+        recovery = (ROOT / "utilities/regenerate_reports.sh").read_text(encoding="utf-8")
+        self.assertIn('generate_multiqc_report.sh', report)
+        self.assertIn('cutnrun2tracks_multiqc_report.html', report)
+        self.assertIn('--exclude deeptools', unified)
+        self.assertIn('multiqc_custom_content_manifest.tsv', unified)
+        self.assertIn('report_checksums.sha256', recovery)
+
     def test_filtering_uses_indexed_marked_bam_for_region_selection(self) -> None:
         script = (ROOT / "scripts/mark_filter_batch.sh").read_text(encoding="utf-8")
         self.assertNotIn('"$tmp/flags.bam"', script)

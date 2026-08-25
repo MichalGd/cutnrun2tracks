@@ -26,7 +26,7 @@ execution failure (`ERROR`) and must be reviewed with the ordinary QC outputs.
 ├── 07_annotation/                  consensus and differential annotations
 ├── 08_differential/                primary and control-aware sensitivity results
 ├── 09_browser/                     UCSC and IGV assets
-├── 10_reports/                     pipeline HTML report
+├── 10_reports/                     unified MultiQC and lightweight HTML reports
 ├── logs/                           stage/tool logs
 └── .checkpoints/                   signature-and-output JSON checkpoints
 ```
@@ -85,10 +85,35 @@ directory contains the deepTools matrix, exported profile values, sorted BED,
 PNG/PDF profile, PNG/PDF heatmap, and task metadata. The run-wide
 `artifacts.tsv` is the stable reporting interface.
 
-The final report is `10_reports/pipeline_report.html`. Machine-readable TSVs in
-`00_metadata`, `05_peaks/consensus`, `06_qc`, and `08_differential` should be
-preferred over parsing HTML or filenames. Browser definitions are written under
-`09_browser/`.
+The final interactive report is
+`10_reports/cutnrun2tracks_multiqc_report.html`; its parsed data directory,
+exported plots, log, custom-content manifest, and status table are retained
+beside it. `10_reports/pipeline_report.html` remains a dependency-light summary,
+with `run_summary.tsv` and `warning_summary.tsv` as stable tabular companions.
+Machine-readable TSVs in `00_metadata`, `04_tracks`, `05_peaks/consensus`,
+`06_qc`, and `08_differential` remain authoritative and should be preferred over
+parsing HTML or filenames. Browser definitions are written under `09_browser/`.
+
+`RUN_MULTIQC=true` enables both the preprocessing FastQC aggregation and this
+final unified report. The final scan includes retained FastQC, Trim Galore,
+Bowtie2, Picard, samtools, and preseq outputs plus CUT-specific custom-content
+tables and selected QC plots. Native deepTools parsing is excluded because it
+is unreliable for some MultiQC 1.35 tables; original deepTools files are kept,
+and selected plots plus the metagene summary are supplied as custom content.
+
+Reports can be recovered from a completed output directory without rerunning
+alignment, filtering, peak calling, normalization, or differential models:
+
+```bash
+bash /path/to/cutnrun2tracks/utilities/regenerate_reports.sh \
+  --output-dir /absolute/path/to/cutnrun2tracks_results
+```
+
+Regeneration writes `10_reports/report_checksums.sha256`. It intentionally does
+not rewrite the historical `00_metadata/final_checksums.sha256` or workflow
+checkpoints. If automatic cleanup already removed an intermediate, MultiQC can
+only report from the retained logs and QC artifacts; normal final outputs are
+otherwise sufficient for the CUT-specific summary sections.
 
 Normalization continuation is recorded in
 `04_tracks/normalized_track_family_status.tsv`. A failed factor calculation has

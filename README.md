@@ -1,4 +1,4 @@
-# cutnrun2tracks 0.2.6
+# cutnrun2tracks 0.2.7
 
 `cutnrun2tracks` is a samplesheet-driven Bash workflow for paired-end and
 single-end CUT&RUN and CUT&Tag data. It provides assay-aware alignment,
@@ -168,7 +168,7 @@ git clone https://github.com/MichalGd/cutnrun2tracks.git
 cd cutnrun2tracks
 
 mamba env create -f environment.yml
-conda activate cutnrun2tracks-0.2.6
+conda activate cutnrun2tracks-0.2.7
 
 mkdir -p /path/to/project/config
 cp config/config.conf.template /path/to/project/config/config.conf
@@ -202,7 +202,7 @@ Create the environment with Mamba or Conda:
 
 ```bash
 mamba env create -f environment.yml
-conda activate cutnrun2tracks-0.2.6
+conda activate cutnrun2tracks-0.2.7
 ```
 
 SEACR 1.3 is not installed by the Conda environment. Install it separately from
@@ -315,6 +315,16 @@ Automatic cleanup runs only after report generation. Set
 for troubleshooting or planned partial reruns. See
 [Outputs and recovery](docs/04_outputs_and_recovery.md).
 
+The final report stage writes the interactive
+`10_reports/cutnrun2tracks_multiqc_report.html` together with exported MultiQC
+data, selected QC plots, a custom-content manifest, and the lightweight
+`pipeline_report.html`. Recover reports from an already completed run without
+rerunning upstream analysis:
+
+```bash
+bash utilities/regenerate_reports.sh --output-dir /absolute/path/to/results
+```
+
 ## Pipeline stages
 
 | Order | Stage name | Operation |
@@ -332,7 +342,7 @@ for troubleshooting or planned partial reruns. See
 | 11 | `qc` | Complexity, fragments, FRiP, fingerprints, TSS, and optional experimental ataqv |
 | 12 | `differential` | Primary raw-count enrichment and optional control-aware sensitivity models |
 | 13 | `annotation` | Gene/cCRE overlaps plus UCSC and IGV assets |
-| 14 | `report` | HTML report and reporting tables |
+| 14 | `report` | Unified MultiQC report, lightweight HTML report, and reporting tables |
 | 15 | `cleanup` | Guarded removal of configured intermediates after report success |
 | 16 | `finalize` | Final file checksums and completion checkpoint |
 
@@ -362,7 +372,7 @@ for troubleshooting or planned partial reruns. See
 ├── 07_annotation/                  consensus and differential annotations
 ├── 08_differential/                primary and sensitivity analyses
 ├── 09_browser/                     UCSC track definitions and IGV session
-├── 10_reports/                     pipeline HTML report and report assets
+├── 10_reports/                     unified MultiQC + lightweight HTML reports and assets
 ├── logs/                           stage and tool logs
 └── .checkpoints/                   signature-and-output JSON checkpoints
 ```

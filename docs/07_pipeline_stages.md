@@ -22,7 +22,7 @@ values for `--from-stage` and `--stop-after`.
 | 11 | `qc` | Report alignment/complexity, fragment length, FRiP, fingerprints, target-control QC, descriptive TSS signal, and optional experimental ataqv | `06_qc/` |
 | 12 | `differential` | Run primary target-only raw-count models and enabled, separately labelled control-aware sensitivity analyses | `08_differential/` |
 | 13 | `annotation` | Annotate consensus/differential regions and create UCSC track definitions and an optional IGV session | `07_annotation/`, `09_browser/` |
-| 14 | `report` | Assemble the pipeline HTML report and reporting tables | `10_reports/` |
+| 14 | `report` | Assemble the unified MultiQC report, lightweight HTML report, and reporting tables | `10_reports/` |
 | 15 | `cleanup` | After report success, remove only intermediates selected by the resolved `KEEP_*` policy and record every deletion | `00_metadata/cleanup_status.tsv`, `cleanup_manifest.tsv` |
 | 16 | `finalize` | Write final file checksums when enabled and record the terminal checkpoint | `00_metadata/final_checksums.sha256` |
 

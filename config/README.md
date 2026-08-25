@@ -14,6 +14,11 @@ bigWigs and does not perform normalization.
 The examples contain illustrative `/data` and `/refs` paths and are not directly
 executable. `cutrun_se.csv` requires `PEAK_CALLERS=macs3`.
 
+`RUN_MULTIQC=true` generates the preprocessing FastQC aggregation and the final
+unified report under `10_reports/`. The final report scans retained standard-tool
+logs and adds CUT-specific custom tables for observations, filtering, peak calls,
+consensus, normalization, spike-in QC, metagene, and differential status.
+
 Peak-caller fault handling is explicit. `PEAKCALL_FAILURE_POLICY=continue`
 records each enabled caller as `SUCCESS`, `EMPTY`, or `ERROR`, keeps processing
 unaffected samples, and excludes only failed/empty primary peak contributions
