@@ -7,7 +7,9 @@ input requirement for canonical BAM filtering, and filtering temporary-cleanup
 scope across all four BAM branches. It also covers strict versus continuation
 peak-caller failure policies, consensus construction after a failed sample is
 excluded from peak contribution, and cohort-local continuation after zero-count
-consensus normalization. Before release, add
+consensus normalization. Nearest-gene annotation is exercised with consensus
+and GTF records deliberately presented in different chromosome orders. Before
+release, add
 Linux integration fixtures for:
 
 - CUT&RUN/CUT&Tag PE narrow and broad targets;

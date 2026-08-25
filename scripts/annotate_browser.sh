@@ -17,10 +17,17 @@ while IFS=$'\t' read -r cohort cohort_key genome assay_profile factor antibody_i
     out="${OUTPUT_DIR}/07_annotation/${cohort}/consensus"; mkdir -p "$out"
     if is_true "$RUN_SIMPLE_PEAK_ANNOTATION"; then
         gtf="$(reference_value GTF "$genome")"
+        chrom_sizes="$(reference_value CHROM_SIZES "$genome")"
         genes="${out}/genes.bed"
+        genes_unsorted="${out}/genes.unsorted.bed"
+        sorted_consensus="${out}/${cohort}.consensus.sorted.bed"
         awk 'BEGIN{FS=OFS="\t"} $3=="gene" {id="."; name="."; if(match($9,/gene_id "[^"]+"/))id=substr($9,RSTART+9,RLENGTH-10); if(match($9,/gene_name "[^"]+"/))name=substr($9,RSTART+11,RLENGTH-12); print $1,$4-1,$5,name,id,$7}' "$gtf" |
-            sort -k1,1 -k2,2n > "$genes"
-        bedtools closest -d -a "$consensus" -b "$genes" > "${out}/${cohort}.nearest_gene.tsv"
+            awk 'NF==6 && $2>=0 && $3>$2' > "$genes_unsorted"
+        bedtools sort -faidx "$chrom_sizes" -i "$genes_unsorted" > "$genes"
+        bedtools sort -faidx "$chrom_sizes" -i "$consensus" > "$sorted_consensus"
+        rm -f -- "$genes_unsorted"
+        bedtools closest -a "$sorted_consensus" -b "$genes" -d -g "$chrom_sizes" \
+            > "${out}/${cohort}.nearest_gene.tsv"
     fi
     if is_true "$RUN_CCRE_ANNOTATION"; then
         ccre="$(optional_reference_value CCRE_BED "$genome")"

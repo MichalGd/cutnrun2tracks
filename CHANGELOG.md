@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.6 - 2026-08-25
+
+- Fixed nearest-gene annotation failures caused by inconsistent chromosome
+  ordering between consensus and GTF-derived BED inputs.
+- Genome-sorted both inputs with the configured chromosome-sizes file and
+  passed that same order to `bedtools closest -g`, making annotation independent
+  of shell locale and suitable for hg38, mm39, and compatible custom genomes.
+- Added an executable annotation-order regression test.
+
 ## 0.2.5 - 2026-08-25
 
 - Made consensus-normalization failures cohort-local when

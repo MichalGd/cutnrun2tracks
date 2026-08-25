@@ -110,5 +110,7 @@ run directory.
 - Technical replicates merge during `preprocess`; biological replicates remain
   distinct through consensus support and differential modeling.
 - `metagene` consumes completed bigWigs and never renormalizes them.
+- `annotation` genome-sorts both consensus and GTF-derived BED records using
+  the configured chromosome-sizes order before nearest-gene lookup.
 - `cleanup` cannot start unless the final report exists, and `finalize` records
   the post-cleanup deliverable tree.

@@ -32,6 +32,11 @@ class InterfaceTests(unittest.TestCase):
         self.assertIn("normalized_track_family_status.tsv", normalized)
         self.assertIn("consensus normalization unavailable", differential)
 
+    def test_annotation_uses_configured_genome_order(self) -> None:
+        script = (ROOT / "scripts/annotate_browser.sh").read_text(encoding="utf-8")
+        self.assertGreaterEqual(script.count('bedtools sort -faidx "$chrom_sizes"'), 2)
+        self.assertIn('bedtools closest -a "$sorted_consensus" -b "$genes" -d -g "$chrom_sizes"', script)
+
     def test_config_template_is_complete_and_safe(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
