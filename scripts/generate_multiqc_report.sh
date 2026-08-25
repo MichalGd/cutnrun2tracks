@@ -40,7 +40,7 @@ if ! multiqc "$OUTPUT_DIR" "$CUSTOM_DIR" \
     exit 1
 fi
 
-if grep -Eiq 'Oops! The .* MultiQC module broke|ValidationError|Error converting colou?r' "$REPORT_LOG"; then
+if grep -Eiq 'Oops! The .* MultiQC module broke|ValidationError' "$REPORT_LOG"; then
     echo "ERROR: MultiQC reported a module or validation failure; inspect $REPORT_LOG" >&2
     exit 1
 fi

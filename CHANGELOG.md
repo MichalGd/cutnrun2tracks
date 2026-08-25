@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.8 - 2026-08-25
+
+- Treat MultiQC colour-conversion diagnostics as non-fatal when MultiQC exits
+  successfully and creates the required report and data directory.
+- Retain strict failure handling for non-zero MultiQC exits, module crashes,
+  validation errors, and missing report artifacts.
+- Add a reporting regression test covering the non-fatal colour diagnostic seen
+  in completed human and mouse CUT&Tag report recovery.
+
 ## 0.2.7 - 2026-08-25
 
 - Added a final unified MultiQC report over the complete retained workflow

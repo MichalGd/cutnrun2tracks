@@ -46,6 +46,7 @@ done
 mkdir -p "$out/${name}_data"
 printf '<html><body>fake MultiQC report</body></html>\n' > "$out/${name}.html"
 printf 'sample\tvalue\nTARGET.bioR1\t1\n' > "$out/${name}_data/multiqc_general_stats.txt"
+echo "mqc_colour | Error converting color '55,126,184' to RGB: input #55,126,184 is not in #RRGGBB format" >&2
 echo 'MultiQC complete'
 FAKE
 chmod +x "$TEMPORARY/bin/multiqc"

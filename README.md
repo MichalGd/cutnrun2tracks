@@ -1,4 +1,4 @@
-# cutnrun2tracks 0.2.7
+# cutnrun2tracks 0.2.8
 
 `cutnrun2tracks` is a samplesheet-driven Bash workflow for paired-end and
 single-end CUT&RUN and CUT&Tag data. It provides assay-aware alignment,
@@ -168,7 +168,7 @@ git clone https://github.com/MichalGd/cutnrun2tracks.git
 cd cutnrun2tracks
 
 mamba env create -f environment.yml
-conda activate cutnrun2tracks-0.2.7
+conda activate cutnrun2tracks-0.2.8
 
 mkdir -p /path/to/project/config
 cp config/config.conf.template /path/to/project/config/config.conf
@@ -202,7 +202,7 @@ Create the environment with Mamba or Conda:
 
 ```bash
 mamba env create -f environment.yml
-conda activate cutnrun2tracks-0.2.7
+conda activate cutnrun2tracks-0.2.8
 ```
 
 SEACR 1.3 is not installed by the Conda environment. Install it separately from
