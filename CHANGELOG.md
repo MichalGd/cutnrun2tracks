@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.2.5 - 2026-08-25
+
+- Made consensus-normalization failures cohort-local when
+  `REQUIRE_ALL_ENABLED_TRACKS=false`, so a zero-count or otherwise
+  non-normalizable cohort is recorded and skipped without terminating
+  unaffected cohorts, QC, metagene, annotation, or reporting.
+- Kept normalization scientifically strict: samples with zero consensus counts
+  are not silently removed and no scaling factors are fabricated. Strict
+  fail-fast behavior remains available with `REQUIRE_ALL_ENABLED_TRACKS=true`.
+- Added per-sample `consensus_count_sums.tsv`, per-family status tables, and
+  dedicated factor-calculation logs to make normalization exclusions auditable.
+- Made differential analysis recognize an upstream normalization skip as an
+  expected cohort skip while continuing to treat unexpectedly missing count
+  tables as failures.
+- Added continuation/strict-mode regression coverage with one failing and one
+  successful cohort.
+
 ## 0.2.4 - 2026-08-24
 
 - Added configurable `PEAKCALL_FAILURE_POLICY=continue|fail`; continuation mode

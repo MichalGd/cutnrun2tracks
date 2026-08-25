@@ -5,8 +5,9 @@ rejection, cross-antibody cohort isolation, consensus biological support,
 spike-in formulas/thresholds, checkpoint invalidation/adoption, the indexed
 input requirement for canonical BAM filtering, and filtering temporary-cleanup
 scope across all four BAM branches. It also covers strict versus continuation
-peak-caller failure policies and consensus construction after a failed sample
-is excluded from peak contribution. Before release, add
+peak-caller failure policies, consensus construction after a failed sample is
+excluded from peak contribution, and cohort-local continuation after zero-count
+consensus normalization. Before release, add
 Linux integration fixtures for:
 
 - CUT&RUN/CUT&Tag PE narrow and broad targets;

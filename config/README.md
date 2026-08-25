@@ -23,6 +23,12 @@ from consensus construction. A cohort continues when at least
 `ALLOW_EMPTY_PEAKS` controls whether a zero-peak caller result is accepted or
 flagged as a problem; it never fabricates peaks.
 
+Normalized-track fault handling uses `REQUIRE_ALL_ENABLED_TRACKS`. Its default
+`false` value records and skips only a cohort/track family whose consensus is
+unavailable or whose consensus counts cannot be normalized, then continues
+unaffected work. Zero-count samples are reported, never silently discarded.
+Set it to `true` when every requested normalized family is mandatory.
+
 Preprocessing parallelism is controlled at two levels:
 
 - `QC_SAMPLE_PARALLEL_JOBS` limits concurrent biological-library workers;

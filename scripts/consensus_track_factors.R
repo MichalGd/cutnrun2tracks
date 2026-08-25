@@ -59,7 +59,23 @@ if (anyNA(counts_matrix) || any(counts_matrix < 0) || any(counts_matrix != round
     stop("counts are not complete non-negative integers")
 }
 counts_matrix <- counts_matrix[rowSums(counts_matrix) > 0, , drop=FALSE]
-if (!nrow(counts_matrix) || any(colSums(counts_matrix) <= 0)) stop("zero consensus counts")
+sample_totals <- colSums(counts_matrix)
+count_diagnostics <- data.frame(
+    sample_key=names(sample_totals), cohort_id=cohort_id, policy=policy,
+    consensus_regions_with_any_count=nrow(counts_matrix),
+    consensus_count_sum=as.numeric(sample_totals),
+    status=ifelse(sample_totals > 0, "NONZERO", "ZERO"),
+    stringsAsFactors=FALSE
+)
+write.table(count_diagnostics, file.path(table_dir, "consensus_count_sums.tsv"),
+            sep="\t", quote=FALSE, row.names=FALSE)
+if (!nrow(counts_matrix)) {
+    stop("no consensus region contains counts in any cohort sample")
+}
+zero_samples <- names(sample_totals)[sample_totals <= 0]
+if (length(zero_samples)) {
+    stop("zero consensus counts for samples: ", paste(zero_samples, collapse=", "))
+}
 storage.mode(counts_matrix) <- "integer"
 dds <- DESeqDataSetFromMatrix(counts_matrix, DataFrame(row.names=colnames(counts_matrix)), design=~1)
 dds <- estimateSizeFactors(dds, type="poscounts")

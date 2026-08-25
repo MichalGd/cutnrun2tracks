@@ -39,6 +39,9 @@ checkpoint and reporting behavior stays deterministic.
 - `SPIKEIN_MODE=none` disables calibration while retaining the `spikein` stage
   boundary.
 - `RUN_METAGENE=false` skips aggregate-signal matrix and plot generation.
+- `REQUIRE_ALL_ENABLED_TRACKS=false` records and skips only an unavailable or
+  non-normalizable cohort/track family. `true` makes such failures fatal. A
+  zero-count sample is never silently removed from its cohort.
 - `RUN_DIFFBIND`, `RUN_DESEQ2_ENRICHMENT`,
   `RUN_CONTROL_SUBTRACTED_SENSITIVITY`, and
   `RUN_TARGET_CONTROL_INTERACTION` govern independent differential outputs.
@@ -99,6 +102,9 @@ run directory.
 
 - `cpm`, `spikein`, and `normalized_tracks` produce visualization tracks.
   `differential` uses raw fragment/read counts, not bigWig values.
+- `normalized_tracks` writes `normalized_track_family_status.tsv` and
+  per-sample consensus-count diagnostics. An upstream cohort skip is propagated
+  as a differential skip, allowing later QC and reporting to run.
 - Matched controls are resolved before processing and are used for background
   peak calling and QC. The primary differential analysis is target-only.
 - Technical replicates merge during `preprocess`; biological replicates remain

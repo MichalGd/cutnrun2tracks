@@ -22,6 +22,16 @@ class InterfaceTests(unittest.TestCase):
         self.assertNotIn("trap 'rm -rf \"$tmp\"' RETURN", script)
         self.assertIn("trap 'rm -rf -- \"$tmp\"' EXIT", script)
 
+    def test_zero_consensus_counts_are_diagnostic_and_cohort_local(self) -> None:
+        factors = (ROOT / "scripts/consensus_track_factors.R").read_text(encoding="utf-8")
+        normalized = (ROOT / "scripts/normalized_tracks_batch.sh").read_text(encoding="utf-8")
+        differential = (ROOT / "scripts/differential_batch.sh").read_text(encoding="utf-8")
+        self.assertIn('"consensus_count_sums.tsv"', factors)
+        self.assertIn("zero consensus counts for samples:", factors)
+        self.assertIn("skip_or_fail_family", normalized)
+        self.assertIn("normalized_track_family_status.tsv", normalized)
+        self.assertIn("consensus normalization unavailable", differential)
+
     def test_config_template_is_complete_and_safe(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)

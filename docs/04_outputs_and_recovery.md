@@ -90,6 +90,13 @@ The final report is `10_reports/pipeline_report.html`. Machine-readable TSVs in
 preferred over parsing HTML or filenames. Browser definitions are written under
 `09_browser/`.
 
+Normalization continuation is recorded in
+`04_tracks/normalized_track_family_status.tsv`. A failed factor calculation has
+a dedicated log under `logs/normalized_tracks/`, a `SKIPPED.json` marker in the
+affected family, and `tables/consensus_count_sums.tsv` when counting completed.
+With `REQUIRE_ALL_ENABLED_TRACKS=false`, unaffected cohorts and later stages
+continue; strict mode records `FAILED.json` and stops.
+
 ## Cleanup and retention
 
 Cleanup begins only after the final report exists, targets only explicit

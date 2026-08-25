@@ -1,4 +1,4 @@
-# cutnrun2tracks 0.2.4 configuration
+# cutnrun2tracks 0.2.5 configuration
 # Plain KEY=VALUE syntax only. Shell expressions and command substitutions are rejected.
 
 # Required run inputs
@@ -98,6 +98,8 @@ CONSENSUS_MIN_BIOLOGICAL_SAMPLES=2
 ALLOW_SINGLE_SAMPLE_CONSENSUS=false
 CONSENSUS_USE_PRIMARY_CALLER=true
 CONSENSUS_PEAK_CLASS=auto
+# false: unavailable consensus or invalid/zero consensus counts skip only the
+# affected cohort/track family; true: either condition stops normalized_tracks.
 REQUIRE_ALL_ENABLED_TRACKS=false
 GENERATE_CPM_TRACKS=true
 GENERATE_DESEQ2_CONSENSUS_TRACKS=true

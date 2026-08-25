@@ -1,4 +1,4 @@
-# cutnrun2tracks 0.2.4
+# cutnrun2tracks 0.2.5
 
 `cutnrun2tracks` is a samplesheet-driven Bash workflow for paired-end and
 single-end CUT&RUN and CUT&Tag data. It provides assay-aware alignment,
@@ -123,6 +123,14 @@ visualization and aggregate-signal plots; differential models use raw counts.
 The formulas and signal units are documented in
 [Methods and normalization](docs/02_methods.md).
 
+Consensus normalization never drops a zero-count sample silently or invents a
+scale factor. With the default `REQUIRE_ALL_ENABLED_TRACKS=false`, an affected
+cohort/track family is recorded as skipped and unaffected cohorts plus later
+QC, metagene, annotation, and reporting stages continue. Set the option to
+`true` for strict fail-fast behavior. Diagnostics are written to
+`04_tracks/normalized_track_family_status.tsv`, each family `tables/` directory,
+and `logs/normalized_tracks/`.
+
 ### Cohorts and consensus peaks
 
 A cohort key includes genome, assay profile, factor, antibody ID, layout,
@@ -160,7 +168,7 @@ git clone https://github.com/MichalGd/cutnrun2tracks.git
 cd cutnrun2tracks
 
 mamba env create -f environment.yml
-conda activate cutnrun2tracks-0.2.4
+conda activate cutnrun2tracks-0.2.5
 
 mkdir -p /path/to/project/config
 cp config/config.conf.template /path/to/project/config/config.conf
@@ -194,7 +202,7 @@ Create the environment with Mamba or Conda:
 
 ```bash
 mamba env create -f environment.yml
-conda activate cutnrun2tracks-0.2.4
+conda activate cutnrun2tracks-0.2.5
 ```
 
 SEACR 1.3 is not installed by the Conda environment. Install it separately from

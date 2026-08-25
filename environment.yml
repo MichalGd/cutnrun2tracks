@@ -1,4 +1,4 @@
-name: cutnrun2tracks-0.2.4
+name: cutnrun2tracks-0.2.5
 channels:
   - conda-forge
   - bioconda
