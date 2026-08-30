@@ -51,3 +51,8 @@ annotation releases and HPA-derived subsets can be replaced without modifying
 workflow code. Filtering thresholds belong to the offline reference-build
 command and are recorded in its reference manifest; plotting-window and
 rendering settings belong to `config.conf`.
+
+For experimental-unit definitions, exact technical-merging rules, matched and
+shared controls, cohort construction, consensus support, blocking, and
+confounding examples, continue with
+[Replicates and experimental design](18_replicates_and_experimental_design.md).

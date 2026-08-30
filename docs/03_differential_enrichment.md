@@ -1,6 +1,6 @@
 # Differential binding analysis
 
-[Documentation index](README.md) | [Replicate inputs](01_inputs_and_configuration.md)
+[Documentation index](README.md) | [Replicates and experimental design](18_replicates_and_experimental_design.md)
 
 Differential binding tests whether raw target fragment/read counts over a fixed
 consensus-region universe differ between biological conditions. It does not

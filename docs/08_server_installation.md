@@ -1,5 +1,7 @@
 # Server installation and shared-reference reuse
 
+[Documentation index](README.md) | [User quick start](19_server_quick_start.md) | [Reference preparation and provenance](17_reference_preparation_and_provenance.md)
+
 This runbook installs `cutnrun2tracks` beside an already validated
 ATACseq2tracks installation. It does not modify the production ATAC workflow,
 its environment, or its shared genomic references.
@@ -557,8 +559,8 @@ and their correctly matched controls.
    MACS3/SEACR commands, consensus support, FRiP, fingerprints, differential
    raw-count inputs, report generation, and checkpoint resume.
 3. Run CUT&Tag separately with its own assay profile.
-4. Run SE separately with `PEAK_CALLERS=macs3` and confirm read—not inferred
-   fragment—signal units.
+4. Run SE separately with `PEAK_CALLERS=macs3` and confirm read--not inferred
+   fragment--signal units.
 5. Enable metagene only after its BED12 gene-set manifest has been built from
    the reused GTF/blacklist/chromosome resources and validated as described in
    [Metagene aggregate-signal module](06_metagene.md).

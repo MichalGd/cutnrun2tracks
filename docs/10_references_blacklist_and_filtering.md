@@ -1,6 +1,6 @@
 # Reference filtering and blacklists
 
-[Documentation index](README.md) | [Peak calling](09_peak_calling.md)
+[Documentation index](README.md) | [All reference families](17_reference_preparation_and_provenance.md) | [Peak calling](09_peak_calling.md)
 
 Blacklist filtering is applied to aligned observations before coverage, peak
 calling, consensus, QC, differential counting, and annotation. Consequently,
