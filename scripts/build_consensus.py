@@ -9,6 +9,7 @@ import gzip
 import json
 import sys
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 
@@ -42,13 +43,17 @@ def merged_intervals(path: Path) -> dict[str, list[tuple[int, int]]]:
     return result
 
 
-def consensus(files: list[tuple[str, Path]], minimum: int) -> list[tuple[str, int, int, int]]:
+def consensus(files: list[tuple[str, Path]], minimum: int, jobs: int = 1) -> list[tuple[str, int, int, int]]:
     events: dict[str, list[tuple[int, int, str]]] = defaultdict(list)
-    for sample, path in files:
-        for chrom, intervals in merged_intervals(path).items():
-            for start, end in intervals:
-                events[chrom].append((start, 1, sample))
-                events[chrom].append((end, -1, sample))
+    workers = min(jobs, max(1, len(files)))
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        interval_sets = executor.map(merged_intervals, (path for _, path in files))
+        loaded = zip((sample for sample, _ in files), interval_sets, strict=True)
+        for sample, by_chrom in loaded:
+            for chrom, intervals in by_chrom.items():
+                for start, end in intervals:
+                    events[chrom].append((start, 1, sample))
+                    events[chrom].append((end, -1, sample))
     result: list[tuple[str, int, int, int]] = []
     for chrom in sorted(events):
         by_position: dict[int, list[tuple[int, str]]] = defaultdict(list)
@@ -84,7 +89,10 @@ def main() -> int:
     parser.add_argument("--minimum-support", type=int, default=2)
     parser.add_argument("--allow-single", action="store_true")
     parser.add_argument("--require-all", action="store_true")
+    parser.add_argument("--jobs", type=int, default=1)
     args = parser.parse_args()
+    if args.jobs < 1:
+        parser.error("--jobs must be a positive integer")
     samples = read_manifest(args.sample_manifest)
     cohorts = read_manifest(args.cohort_manifest)
     failures = 0
@@ -166,7 +174,7 @@ def main() -> int:
                                 "regions": 0, "reason": reason})
                 failures += int(status == "FAILED")
                 continue
-        regions = consensus(peak_files, minimum)
+        regions = consensus(peak_files, minimum, args.jobs)
         if not regions:
             reason = "no intervals meet biological support"
             status = "FAILED" if args.require_all else "SKIPPED"

@@ -16,7 +16,7 @@ COLUMNS = [
     "sample_id", "fastq_1", "fastq_2", "layout", "genome",
     "assay_profile", "factor", "antibody_id", "target_class", "condition",
     "treatment", "cell_type", "replicate", "tech_replicate", "is_control",
-    "control_type", "control_id", "analysis_duplicate_policy", "blacklist",
+    "control_type", "control_id", "analysis_duplicate_policy",
     "spikein_to_host_ratio", "spikein_stage", "spikein_lot", "batch",
     "donor", "output_prefix",
 ]
@@ -75,12 +75,16 @@ def cohort_slug(identity: tuple[str, ...]) -> str:
 def resolve_primary(row: dict[str, str], configured: str, callers: set[str]) -> tuple[str, str]:
     if configured != "auto":
         caller = configured
+    elif row["target_class"] in {"broad", "mixed"} and "epic2" in callers:
+        caller = "epic2"
     elif row["layout"] == "PE" and row["target_class"] == "narrow" and "seacr" in callers:
         caller = "seacr"
     else:
         caller = "macs3"
     if caller not in callers:
         raise ValueError(f"primary caller {caller} is not enabled in PEAK_CALLERS")
+    if caller == "epic2" and row["target_class"] == "narrow":
+        raise ValueError("epic2 cannot be the primary caller for target_class=narrow")
     peak_class = "narrow" if row["target_class"] == "narrow" else "broad"
     return caller, peak_class
 
@@ -110,11 +114,11 @@ def write_tsv(path: Path, fieldnames: list[str], rows: list[dict[str, object]]) 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("samplesheet", type=Path)
-    parser.add_argument("--assay-profile", choices=["cutrun", "cuttag"], required=True)
     parser.add_argument("--spikein-mode", choices=["none", "dm6", "ecoli", "custom"], required=True)
     parser.add_argument("--spikein-reference-id", default="")
     parser.add_argument("--peak-callers", default="seacr,macs3")
-    parser.add_argument("--primary-peak-caller", choices=["auto", "seacr", "macs3"], default="auto")
+    parser.add_argument("--primary-peak-caller", choices=["auto", "seacr", "macs3", "epic2"], default="auto")
+    parser.add_argument("--blacklist-map", action="append", default=[], metavar="GENOME=PATH")
     parser.add_argument("--allow-shared-controls", action="store_true")
     parser.add_argument("--allow-mixed-layouts", action="store_true")
     parser.add_argument("--allow-mixed-genomes", action="store_true")
@@ -122,6 +126,17 @@ def main() -> int:
     parser.add_argument("--check-files", action="store_true")
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
+
+    blacklist_map: dict[str, str] = {}
+    try:
+        for item in args.blacklist_map:
+            genome, separator, path = item.partition("=")
+            if not separator or not genome or not path:
+                raise ValueError(f"invalid --blacklist-map value: {item!r}; expected GENOME=PATH")
+            blacklist_map[genome] = path
+    except ValueError as exc:
+        print(f"SAMPLESHEET ERROR: {exc}", file=sys.stderr)
+        return 1
 
     errors: list[str] = []
     try:
@@ -164,9 +179,9 @@ def main() -> int:
             if layout not in {"PE", "SE"}:
                 raise ValueError(f"row {number}: layout must be PE or SE")
             row["layout"] = layout
-            if row["assay_profile"].lower() != args.assay_profile:
-                raise ValueError(f"row {number}: assay_profile does not match run profile")
             row["assay_profile"] = row["assay_profile"].lower()
+            if row["assay_profile"] not in {"cutrun", "cuttag"}:
+                raise ValueError(f"row {number}: assay_profile must be cutrun or cuttag")
             if not row["genome"]:
                 raise ValueError(f"row {number}: genome is empty")
             if not row["fastq_1"]:
@@ -192,8 +207,11 @@ def main() -> int:
                     raise ValueError(f"row {number}: target needs narrow/broad/mixed class and control_type=none")
                 if not row["control_id"] and not args.allow_control_free:
                     raise ValueError(f"row {number}: target requires control_id")
+            row["blacklist"] = blacklist_map.get(row["genome"], "")
             if not row["blacklist"]:
-                raise ValueError(f"row {number}: blacklist is required")
+                raise ValueError(
+                    f"row {number}: no configured blacklist reference for genome {row['genome']}"
+                )
             if any("\t" in value or ";" in value for value in row.values()):
                 raise ValueError(f"row {number}: tabs and semicolons are not allowed in fields")
             if args.spikein_mode == "none":
@@ -268,7 +286,7 @@ def main() -> int:
         row["fastq_1_list"] = ";".join(member["fastq_1"] for member in sorted(members, key=lambda x: int(x["tech_replicate"])))
         row["fastq_2_list"] = ";".join(member["fastq_2"] for member in sorted(members, key=lambda x: int(x["tech_replicate"])) if member["fastq_2"])
         row["technical_units"] = len(members)
-        row["control_key"] = ""
+        row["control_key"] = "."
         row["cohort_id"] = ""
         row["cohort_key"] = ""
         row["primary_peak_caller"] = "none"
@@ -366,6 +384,27 @@ def main() -> int:
         "sample_keys", "conditions",
     ]
     write_tsv(args.output_dir / "cohort_manifest.tsv", cohort_fields, cohort_rows)
+    membership_rows: list[dict[str, object]] = []
+    biological_by_key = {str(row["sample_key"]): row for row in biological_rows}
+    for row in target_rows:
+        membership_rows.append({
+            "cohort_id": row["cohort_id"], "sample_key": row["sample_key"],
+            "role": "target", "condition": row["condition"], "replicate": row["replicate"],
+            "control_key": row["control_key"], "control_reused_by_targets": ".",
+        })
+    for control_key, users in sorted(control_users.items()):
+        control = biological_by_key.get(control_key)
+        membership_rows.append({
+            "cohort_id": ",".join(sorted({str(biological_by_key[user]["cohort_id"]) for user in users})),
+            "sample_key": control_key, "role": "control",
+            "condition": control["condition"] if control else ".",
+            "replicate": control["replicate"] if control else ".",
+            "control_key": ".", "control_reused_by_targets": ",".join(users),
+        })
+    write_tsv(args.output_dir / "cohort_membership.tsv", [
+        "cohort_id", "sample_key", "role", "condition", "replicate", "control_key",
+        "control_reused_by_targets",
+    ], membership_rows)
     print(
         f"Validated {len(raw_rows)} sequencing units, {len(biological_rows)} biological libraries, "
         f"and {len(cohort_rows)} target cohorts"

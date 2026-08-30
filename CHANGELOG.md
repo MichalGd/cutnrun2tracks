@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.3.0 - 2026-08-30
+
+- Removed duplicated run-wide assay and row-level blacklist settings. Genome,
+  layout, assay, FASTQs, biological metadata, and control mappings now live only
+  in the samplesheet; assembly references remain only in config.
+- Added `cohort_membership.tsv` so targets, controls, shared-control reuse, and
+  derived cohort membership are directly auditable.
+- Added per-technical-unit FastQC, NRF/PBC library-complexity metrics,
+  cohort-specific replicate Spearman/PCA QC, and optional phantompeak
+  cross-correlation. preseq remains non-fatal and descriptive.
+- Added optional epic2 broad-domain calling through a separate versioned
+  environment, with broad/mixed-only validation, matched controls, explicit
+  effective-genome settings, caller status, and normal fault isolation.
+- Added annotation of every successful per-sample caller peak set and optional
+  primary consensus peak set. Outputs include exclusive promoter/enhancer/exon/
+  intron/gene-end/other-regulatory/intergenic/unclassified assignments, a full
+  overlap table, counts, fractions, base-pair fractions, nearest genes/TSS
+  distances, and horizontal stacked PNG/PDF/SVG plots.
+- Added bounded parallel pools for spike-in, normalized-track families,
+  differential cohorts, annotation, checkpoint hashing, and final checksums.
+  Preflight now writes a jobs x threads resource audit and can fail on CPU
+  overcommit.
+- Added a repository-provided shared launcher that pins the immutable workflow
+  release and main Conda environment, allowing a complete run from one
+  `cutnrun2tracks --config ...` command without interactive activation.
+- Added raw internal console capture, structured workflow/stage/command event
+  tables, stage timing, signals/failures, and exit codes while remaining
+  compatible with a user-supplied nohup log.
+- Fixed strict normalized-track parallel failure handling so the stage writes a
+  deterministic FAILED status before returning nonzero.
+
 ## 0.2.8 - 2026-08-25
 
 - Treat MultiQC colour-conversion diagnostics as non-fatal when MultiQC exits

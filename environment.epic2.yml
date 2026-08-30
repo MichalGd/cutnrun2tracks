@@ -1,0 +1,7 @@
+name: cutnrun2tracks-epic2-0.3.0
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python =3.11
+  - epic2 =0.0.52

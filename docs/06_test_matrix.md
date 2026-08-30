@@ -11,10 +11,17 @@ consensus normalization. Nearest-gene annotation is exercised with consensus
 and GTF records deliberately presented in different chromosome orders. Unified
 reporting is exercised with retained completed-run tables and a synthetic
 MultiQC executable; the fixture verifies custom content, parsed data, report
-checksums, and that upstream outputs are unchanged. Before release, add
+checksums, and that upstream outputs are unchanged. The feature-annotation
+fixture covers promoter, enhancer, exon, intron, gene-end, intergenic, and
+unclassified assignments; exact absolute/fractional summaries; and plot
+creation. Static interface tests cover the self-contained launcher, structured
+logging, resource budget, samplesheet/config ownership boundary, cohort
+membership manifest, and epic2 auto-primary selection for broad targets.
+Before release, add
 Linux integration fixtures for:
 
-- CUT&RUN/CUT&Tag PE narrow and broad targets;
+- CUT&RUN/CUT&Tag PE narrow and broad targets, including epic2 against a
+  version-pinned real executable;
 - CUT&RUN/CUT&Tag SE MACS3 presets;
 - all duplicate/MAPQ BAM branches and pair-safe blacklist orphan removal;
 - all five coverage families against hand-calculated counts;

@@ -47,7 +47,7 @@ filter_branch() (
     samtools quickcheck "$output"
     samtools index -@ "$THREADS_SAMTOOLS" "$output"
     local count
-    count="$(signal_count "$output" "$layout")"
+    count="$(signal_count "$output" "$layout" "$([[ "$remove_duplicates" == "true" ]] && echo remove || echo retain)")"
     if (( count == 0 )) && ! is_true "$ALLOW_EMPTY_FILTERED_BAM"; then
         die "filtering removed every signal unit: $output"
     fi
@@ -86,8 +86,8 @@ worker() {
     printf 'sample_key\tq0_dup_retained\tq0_dup_removed\tq30_dup_retained\tq30_dup_removed\tanalysis_policy\n' \
         > "${OUTPUT_DIR}/03_alignment/metrics/${key}.filter_counts.tsv"
     printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$key" \
-        "$(signal_count "$q0r" "$layout")" "$(signal_count "$q0d" "$layout")" \
-        "$(signal_count "$q30r" "$layout")" "$(signal_count "$q30d" "$layout")" "$duplicate_policy" \
+        "$(signal_count "$q0r" "$layout" retain)" "$(signal_count "$q0d" "$layout" remove)" \
+        "$(signal_count "$q30r" "$layout" retain)" "$(signal_count "$q30d" "$layout" remove)" "$duplicate_policy" \
         >> "${OUTPUT_DIR}/03_alignment/metrics/${key}.filter_counts.tsv"
 }
 

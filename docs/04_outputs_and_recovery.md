@@ -94,6 +94,38 @@ Machine-readable TSVs in `00_metadata`, `04_tracks`, `05_peaks/consensus`,
 `06_qc`, and `08_differential` remain authoritative and should be preferred over
 parsing HTML or filenames. Browser definitions are written under `09_browser/`.
 
+The complete peak-feature bundle is under
+`07_annotation/feature_summary/`:
+
+- `peak_feature_assignments.tsv.gz`: one exclusive assignment plus nearest
+  gene/TSS distance for every valid peak;
+- `peak_feature_all_overlaps.tsv.gz`: long table preserving every overlap;
+- `peak_feature_counts.tsv`, `peak_feature_fractions.tsv`, and
+  `peak_feature_bp_coverage.tsv`: per sample/caller/class and optional
+  consensus summaries;
+- `peak_annotation_status.tsv`: valid, invalid, and unclassified counts and
+  whether enhancer annotation was evaluated;
+- `peak_feature_composition.<caller>.<class>.{png,pdf,svg}`: horizontal
+  stacked count, peak-fraction, and peak-covered-base-fraction panels.
+
+QC additions are retained under `06_qc/alignment_and_complexity/` (NRF/PBC and
+preseq) and `06_qc/correlation_pca_fingerprint/<cohort>/` (raw binned counts,
+Spearman matrix/heatmap, and PCA data/plot).
+
+## Logging interfaces
+
+- `logs/cutnrun2tracks.console.log`: raw combined stdout/stderr from the
+  internal launcher capture;
+- `00_metadata/workflow_events.tsv`: stage start, reuse, completion, failure,
+  signal, and elapsed time;
+- `00_metadata/stage_timing.tsv`: one concise timing row per stage;
+- `00_metadata/commands.log`: shell-quoted commands;
+- `00_metadata/command_events.tsv`: command start/end/exit/elapsed records;
+- `00_metadata/resource_budget.tsv`: jobs x threads audit for long stages.
+
+Redirecting the single launcher command with `nohup` is supported and creates
+an additional plain console record without replacing these internal logs.
+
 `RUN_MULTIQC=true` enables both the preprocessing FastQC aggregation and this
 final unified report. The final scan includes retained FastQC, Trim Galore,
 Bowtie2, Picard, samtools, and preseq outputs plus CUT-specific custom-content

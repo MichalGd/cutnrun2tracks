@@ -7,7 +7,7 @@ source "${SCRIPT_DIR}/lib/common.sh"
 source "${SCRIPT_DIR}/lib/parallel_jobs.sh"
 require_config
 
-mkdir -p "${OUTPUT_DIR}/01_fastq_qc/raw" "${OUTPUT_DIR}/01_fastq_qc/trimmed" \
+mkdir -p "${OUTPUT_DIR}/01_fastq_qc/raw" "${OUTPUT_DIR}/01_fastq_qc/raw_units" "${OUTPUT_DIR}/01_fastq_qc/trimmed" \
     "${OUTPUT_DIR}/01_fastq_qc/multiqc" "${OUTPUT_DIR}/02_trimmed_fastq" "${OUTPUT_DIR}/logs/preprocess"
 
 merge_fastqs() {
@@ -28,13 +28,30 @@ worker() {
     local work="${OUTPUT_DIR}/02_trimmed_fastq"
     local raw1="${work}/${key}.R1.merged.fastq.gz"
     local raw2="${work}/${key}.R2.merged.fastq.gz" log="${OUTPUT_DIR}/logs/preprocess/${key}.log"
+    if is_true "$RUN_FASTQC" && is_true "$RUN_FASTQC_PER_TECHNICAL_UNIT"; then
+        local unit unit_dir
+        local -a unit_r1 unit_r2
+        IFS=';' read -r -a unit_r1 <<< "$fq1_list"
+        IFS=';' read -r -a unit_r2 <<< "$fq2_list"
+        for unit in "${!unit_r1[@]}"; do
+            unit_dir="${OUTPUT_DIR}/01_fastq_qc/raw_units/${key}/techR$((unit+1))"
+            mkdir -p "$unit_dir"
+            if [[ "$layout" == "PE" ]]; then
+                run_logged fastqc --threads "$THREADS_FASTQC" --outdir "$unit_dir" \
+                    "${unit_r1[$unit]}" "${unit_r2[$unit]}" >>"$log" 2>&1
+            else
+                run_logged fastqc --threads "$THREADS_FASTQC" --outdir "$unit_dir" \
+                    "${unit_r1[$unit]}" >>"$log" 2>&1
+            fi
+        done
+    fi
     merge_fastqs "$fq1_list" "$raw1"
     [[ "$layout" == "PE" ]] && merge_fastqs "$fq2_list" "$raw2"
     if is_true "$RUN_FASTQC"; then
         if [[ "$layout" == "PE" ]]; then
-            run_logged fastqc --threads "$THREADS_FASTQC" --outdir "${OUTPUT_DIR}/01_fastq_qc/raw" "$raw1" "$raw2" >"$log" 2>&1
+            run_logged fastqc --threads "$THREADS_FASTQC" --outdir "${OUTPUT_DIR}/01_fastq_qc/raw" "$raw1" "$raw2" >>"$log" 2>&1
         else
-            run_logged fastqc --threads "$THREADS_FASTQC" --outdir "${OUTPUT_DIR}/01_fastq_qc/raw" "$raw1" >"$log" 2>&1
+            run_logged fastqc --threads "$THREADS_FASTQC" --outdir "${OUTPUT_DIR}/01_fastq_qc/raw" "$raw1" >>"$log" 2>&1
         fi
     fi
     if is_true "$TRIM_ADAPTERS"; then

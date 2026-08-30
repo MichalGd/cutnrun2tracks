@@ -1,10 +1,9 @@
-# cutnrun2tracks 0.2.8 configuration
+# cutnrun2tracks 0.3.0 configuration
 # Plain KEY=VALUE syntax only. Shell expressions and command substitutions are rejected.
 
 # Required run inputs
 SAMPLESHEET=/absolute/path/to/samplesheet.csv
 OUTPUT_DIR=/absolute/path/to/results
-ASSAY_PROFILE=cutrun
 RUN_ID=auto
 ALLOW_MIXED_LAYOUTS=false
 ALLOW_MIXED_GENOMES=false
@@ -16,6 +15,7 @@ CHROM_SIZES_HG38=/refs/hg38/hg38.chrom.sizes
 CANONICAL_CONTIGS_HG38=/refs/hg38/hg38.canonical_contigs.txt
 GTF_HG38=/refs/hg38/genes.gtf
 BLACKLIST_HG38=/refs/hg38/hg38.blacklist.bed
+EFFECTIVE_GENOME_SIZE_HG38=2913022398
 TSS_BED_HG38=
 CCRE_BED_HG38=
 
@@ -25,6 +25,7 @@ CHROM_SIZES_MM39=/refs/mm39/mm39.chrom.sizes
 CANONICAL_CONTIGS_MM39=/refs/mm39/mm39.canonical_contigs.txt
 GTF_MM39=/refs/mm39/genes.gtf
 BLACKLIST_MM39=/refs/mm39/mm39.blacklist.bed
+EFFECTIVE_GENOME_SIZE_MM39=2654621783
 TSS_BED_MM39=
 CCRE_BED_MM39=
 
@@ -33,6 +34,7 @@ TRIM_ADAPTERS=true
 TRIMGALORE_EXTRA_ARGS=
 MIN_TRIMMED_LENGTH=20
 RUN_FASTQC=true
+RUN_FASTQC_PER_TECHNICAL_UNIT=true
 RUN_MULTIQC=true
 # RUN_MULTIQC controls both the preprocessing FastQC summary and the final
 # unified report over retained workflow logs, QC tables, and custom content.
@@ -94,6 +96,13 @@ MACS3_CUTRUN_SE_SHIFT=0
 MACS3_CUTRUN_SE_EXTSIZE=150
 MACS3_CUTTAG_SE_SHIFT=-75
 MACS3_CUTTAG_SE_EXTSIZE=150
+# Optional broad-domain caller. Keep epic2 out of PEAK_CALLERS when its
+# versioned sidecar environment/launcher is not installed.
+EPIC2_COMMAND=epic2
+EPIC2_BIN_SIZE=200
+EPIC2_GAP_SIZE=3
+EPIC2_FDR=0.05
+EPIC2_FRAGMENT_SIZE=200
 
 # Consensus and coverage
 CONSENSUS_MIN_BIOLOGICAL_SAMPLES=2
@@ -146,6 +155,10 @@ ATAQV_PARALLEL_JOBS=2
 THREADS_ATAQV=4
 ATAQV_TSS_EXTENSION=1000
 RUN_PRESEQ=true
+RUN_LIBRARY_COMPLEXITY=true
+RUN_CROSS_CORRELATION=false
+PHANTOMPEAK_COMMAND=run_spp.R
+RUN_REPLICATE_CORRELATION=true
 QC_THRESHOLDS_MODE=descriptive
 
 # Reusable metagene / aggregate-signal plots. References are prepared separately
@@ -171,7 +184,7 @@ METAGENE_ZMAX=auto
 METAGENE_DPI=200
 METAGENE_PLOT_FORMATS=png,pdf
 METAGENE_THREADS_COMPUTEMATRIX=4
-METAGENE_PARALLEL_JOBS=2
+METAGENE_PARALLEL_JOBS=8
 
 # Differential enrichment
 RUN_DIFFBIND=true
@@ -194,15 +207,29 @@ RUN_SIMPLE_PEAK_ANNOTATION=true
 RUN_CCRE_ANNOTATION=true
 PEAK_ANNOTATION_PROMOTER_UPSTREAM=2000
 PEAK_ANNOTATION_PROMOTER_DOWNSTREAM=500
+RUN_FEATURE_ANNOTATION_SUMMARY=true
+PEAK_ANNOTATION_GENE_END_WINDOW=2000
+PEAK_ANNOTATION_FEATURE_PRECEDENCE=promoter,enhancer,exon,intron,gene_end,other_regulatory,intergenic,unclassified
+PEAK_ANNOTATION_PLOT_FORMATS=png,pdf,svg
+PEAK_ANNOTATION_INCLUDE_CONSENSUS=true
 RUN_MOTIF_ENRICHMENT=false
 
 # Bounded resources
+# auto resolves to CPUs visible to the workflow. Resource checks compare every
+# stage's jobs x threads with this ceiling; they do not introduce a scheduler.
+TOTAL_CPU_BUDGET=auto
+RESOURCE_CHECK_MODE=warn
 THREADS_PARALLEL_JOBS=8
-QC_SAMPLE_PARALLEL_JOBS=4
-TRACK_PARALLEL_JOBS=2
-PEAKCALL_PARALLEL_JOBS=2
-MERGE_PARALLEL_JOBS=2
-SPIKEIN_PARALLEL_JOBS=2
+QC_SAMPLE_PARALLEL_JOBS=8
+TRACK_PARALLEL_JOBS=8
+PEAKCALL_PARALLEL_JOBS=8
+MERGE_PARALLEL_JOBS=8
+SPIKEIN_PARALLEL_JOBS=8
+NORMALIZED_TRACK_PARALLEL_JOBS=8
+DIFFERENTIAL_PARALLEL_JOBS=4
+ANNOTATION_PARALLEL_JOBS=8
+CHECKPOINT_PARALLEL_JOBS=8
+CHECKSUM_PARALLEL_JOBS=8
 
 # Recovery and cleanup
 CHECKPOINT_MODE=signature_and_outputs
@@ -220,5 +247,7 @@ UCSC_BIGDATA_URL_BASE=
 UCSC_TRACK_PREFIX=CUT
 WRITE_IGV_SESSION=true
 WRITE_COMMAND_LOG=true
+WRITE_STRUCTURED_LOG=true
+WRITE_CONSOLE_LOG=true
 WRITE_FILE_CHECKSUMS=true
 REDACT_PATHS_IN_REPORT=false

@@ -1,3 +1,3 @@
-sample_id,fastq_1,fastq_2,layout,genome,assay_profile,factor,antibody_id,target_class,condition,treatment,cell_type,replicate,tech_replicate,is_control,control_type,control_id,analysis_duplicate_policy,blacklist,spikein_to_host_ratio,spikein_stage,spikein_lot,batch,donor,output_prefix
-KO_H3K27me3,/data/KO_H3K27me3_R1.fastq.gz,/data/KO_H3K27me3_R2.fastq.gz,PE,mm39,cuttag,H3K27me3,AB_H3K27ME3_01,broad,KO,none,keratinocyte,1,1,FALSE,none,KO_IgG,retain,/refs/mm39.blacklist.bed,,,,B1,D1,KO_H3K27me3
-KO_IgG,/data/KO_IgG_R1.fastq.gz,/data/KO_IgG_R2.fastq.gz,PE,mm39,cuttag,IgG,AB_IGG_01,control,KO,none,keratinocyte,1,1,TRUE,igg,,remove,/refs/mm39.blacklist.bed,,,,B1,D1,KO_IgG
+sample_id,fastq_1,fastq_2,layout,genome,assay_profile,factor,antibody_id,target_class,condition,treatment,cell_type,replicate,tech_replicate,is_control,control_type,control_id,analysis_duplicate_policy,spikein_to_host_ratio,spikein_stage,spikein_lot,batch,donor,output_prefix
+KO_H3K27me3,/data/KO_H3K27me3_R1.fastq.gz,/data/KO_H3K27me3_R2.fastq.gz,PE,mm39,cuttag,H3K27me3,AB_H3K27ME3_01,broad,KO,none,keratinocyte,1,1,FALSE,none,KO_IgG,retain,,,,B1,D1,KO_H3K27me3
+KO_IgG,/data/KO_IgG_R1.fastq.gz,/data/KO_IgG_R2.fastq.gz,PE,mm39,cuttag,IgG,AB_IGG_01,control,KO,none,keratinocyte,1,1,TRUE,igg,,remove,,,,B1,D1,KO_IgG

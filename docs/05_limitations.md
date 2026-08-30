@@ -16,10 +16,26 @@ numerical stability, not biological validity. Residual bacterial DNA is not
 automatically a fixed external standard. Global occupancy changes require a
 validated spike design or another justified normalization strategy.
 
-Version 0.2.8 does not support SEACR for SE, mixed layouts/genomes by default,
+Version 0.3.0 does not support SEACR for SE, mixed layouts/genomes by default,
 arbitrary blocking factors in DiffBind, or multi-condition target-control
 interaction models. ataqv remains disabled and, if enabled, is stored under
 `experimental_ATAC_derived_ataqv` without CUT pass/fail interpretation.
+
+epic2 is optional and isolated in a sidecar because its dependency stack is
+older than the main workflow environment. Its broad domains can be sensitive
+to bin size, gap allowance, effective genome fraction, control quality, and
+coverage depth. MACS3 broad and epic2 results should be reviewed side by side
+during pilot validation; neither is a universal default for all CUT assays.
+
+Enhancer annotation is only as complete as `CCRE_BED_<GENOME>`. When no cCRE
+reference is configured, enhancer status is explicitly `not_evaluated` and the
+GTF-derived promoter/exon/intron/gene-end/intergenic classifications remain
+available. Genomic categories are descriptive overlaps, not functional proof.
+
+The CPU budget is a conservative stage-level jobs x threads check, not a cluster
+scheduler or RAM estimator. It prevents obvious oversubscription when set to
+`RESOURCE_CHECK_MODE=fail`, but administrators must still account for other
+users, filesystem bandwidth, Java/R memory, and tool-specific transient peaks.
 
 Consensus-normalized tracks and differential count models require every target
 sample in a cohort to have nonzero counts in the retained consensus intervals.

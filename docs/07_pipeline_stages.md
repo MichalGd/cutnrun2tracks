@@ -9,19 +9,19 @@ values for `--from-stage` and `--stop-after`.
 
 | Order | Stage | Main work | Declared output |
 |---:|---|---|---|
-| 1 | `preflight` | Validate dependencies, configuration, samplesheet, reference compatibility, caller policy, and optional modules | `00_metadata/preflight_status.tsv` |
-| 2 | `preprocess` | Merge technical-replicate FASTQs, run raw/trimmed FastQC, optionally trim adapters, and run MultiQC | `02_trimmed_fastq/` |
+| 1 | `preflight` | Validate dependencies, configuration, samplesheet, reference compatibility, caller policy, optional modules, and jobs x threads resource budgets | `00_metadata/preflight_status.tsv` |
+| 2 | `preprocess` | Run per-technical-unit FastQC, merge technical FASTQs, run merged/trimmed FastQC, optionally trim adapters, and run MultiQC | `02_trimmed_fastq/` |
 | 3 | `alignment` | Align to the host reference with Bowtie2; create the optional competitive host-plus-spike alignment | `03_alignment/sorted/` |
 | 4 | `filtering` | Mark duplicates once; apply primary/canonical/blacklist and MAPQ filters; expose permissive, intermediate, q30 duplicate-retained, and stringent BAM branches | `03_alignment/analysis/` |
 | 5 | `cpm` | Create fragment-aware PE or read-aware SE CPM bedGraph/bigWig tracks and normalization metadata | `04_tracks/cpm/` |
-| 6 | `peakcalling` | Run enabled PE SEACR and/or layout-aware MACS3 modes, recording per-sample/caller `SUCCESS`, `EMPTY`, or `ERROR` status under the configured failure policy | `05_peaks/per_sample/` |
+| 6 | `peakcalling` | Run enabled PE SEACR, layout-aware MACS3, and optional broad/mixed epic2, recording per-sample/caller `SUCCESS`, `EMPTY`, or `ERROR` status under the configured failure policy | `05_peaks/per_sample/` |
 | 7 | `consensus` | Build caller/peak-class consensus sets from successful primary peak sets, record exclusions, and enforce biological-sample support | `05_peaks/consensus/` |
 | 8 | `spikein` | Count retained spike observations, enforce QC thresholds, and create calibrated host plus spike-control tracks when enabled | `04_tracks/spikein/` |
 | 9 | `normalized_tracks` | Build consensus count tables and the enabled DESeq2-consensus and robust-CPM coverage families | `04_tracks/` |
 | 10 | `metagene` | Select upstream-normalized tracks and optionally render TSS, TES, and scaled-gene-body profile/heatmap pairs | `06_qc/metagene/status.tsv` |
-| 11 | `qc` | Report alignment/complexity, fragment length, FRiP, fingerprints, target-control QC, descriptive TSS signal, and optional experimental ataqv | `06_qc/` |
+| 11 | `qc` | Report alignment, NRF/PBC/preseq complexity, fragment length, FRiP, target-control fingerprints, cohort replicate correlation/PCA, descriptive TSS signal, and optional cross-correlation/ataqv | `06_qc/` |
 | 12 | `differential` | Run primary target-only raw-count models and enabled, separately labelled control-aware sensitivity analyses | `08_differential/` |
-| 13 | `annotation` | Annotate consensus/differential regions and create UCSC track definitions and an optional IGV session | `07_annotation/`, `09_browser/` |
+| 13 | `annotation` | Classify every successful caller peak and optional consensus peak, summarize counts/fractions/base coverage, render horizontal stacked plots, annotate consensus/differential regions, and create UCSC/IGV assets | `07_annotation/`, `09_browser/` |
 | 14 | `report` | Assemble the unified MultiQC report, lightweight HTML report, and reporting tables | `10_reports/` |
 | 15 | `cleanup` | After report success, remove only intermediates selected by the resolved `KEEP_*` policy and record every deletion | `00_metadata/cleanup_status.tsv`, `cleanup_manifest.tsv` |
 | 16 | `finalize` | Write final file checksums when enabled and record the terminal checkpoint | `00_metadata/final_checksums.sha256` |
@@ -45,7 +45,8 @@ checkpoint and reporting behavior stays deterministic.
 - `RUN_DIFFBIND`, `RUN_DESEQ2_ENRICHMENT`,
   `RUN_CONTROL_SUBTRACTED_SENSITIVITY`, and
   `RUN_TARGET_CONTROL_INTERACTION` govern independent differential outputs.
-- `RUN_SIMPLE_PEAK_ANNOTATION`, `RUN_CCRE_ANNOTATION`, and
+- `RUN_SIMPLE_PEAK_ANNOTATION`, `RUN_CCRE_ANNOTATION`,
+  `RUN_FEATURE_ANNOTATION_SUMMARY`, `PEAK_ANNOTATION_INCLUDE_CONSENSUS`, and
   `WRITE_IGV_SESSION` control optional annotation/browser products.
 - `ENABLE_AUTOMATIC_CLEANUP=false` retains intermediates.
 
@@ -112,5 +113,7 @@ run directory.
 - `metagene` consumes completed bigWigs and never renormalizes them.
 - `annotation` genome-sorts both consensus and GTF-derived BED records using
   the configured chromosome-sizes order before nearest-gene lookup.
+- All successful enabled per-sample caller peak sets are annotated; only the
+  selected primary caller contributes to consensus and differential analysis.
 - `cleanup` cannot start unless the final report exists, and `finalize` records
   the post-cleanup deliverable tree.

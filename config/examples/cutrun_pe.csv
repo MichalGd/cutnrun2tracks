@@ -1,3 +1,3 @@
-sample_id,fastq_1,fastq_2,layout,genome,assay_profile,factor,antibody_id,target_class,condition,treatment,cell_type,replicate,tech_replicate,is_control,control_type,control_id,analysis_duplicate_policy,blacklist,spikein_to_host_ratio,spikein_stage,spikein_lot,batch,donor,output_prefix
-WT_CTCF,/data/WT_CTCF_R1.fastq.gz,/data/WT_CTCF_R2.fastq.gz,PE,hg38,cutrun,CTCF,AB_CTCF_01,narrow,WT,none,NHEK,1,1,FALSE,none,WT_IgG,retain,/refs/hg38.blacklist.bed,,,,B1,D1,WT_CTCF
-WT_IgG,/data/WT_IgG_R1.fastq.gz,/data/WT_IgG_R2.fastq.gz,PE,hg38,cutrun,IgG,AB_IGG_01,control,WT,none,NHEK,1,1,TRUE,igg,,remove,/refs/hg38.blacklist.bed,,,,B1,D1,WT_IgG
+sample_id,fastq_1,fastq_2,layout,genome,assay_profile,factor,antibody_id,target_class,condition,treatment,cell_type,replicate,tech_replicate,is_control,control_type,control_id,analysis_duplicate_policy,spikein_to_host_ratio,spikein_stage,spikein_lot,batch,donor,output_prefix
+WT_CTCF,/data/WT_CTCF_R1.fastq.gz,/data/WT_CTCF_R2.fastq.gz,PE,hg38,cutrun,CTCF,AB_CTCF_01,narrow,WT,none,NHEK,1,1,FALSE,none,WT_IgG,retain,,,,B1,D1,WT_CTCF
+WT_IgG,/data/WT_IgG_R1.fastq.gz,/data/WT_IgG_R2.fastq.gz,PE,hg38,cutrun,IgG,AB_IGG_01,control,WT,none,NHEK,1,1,TRUE,igg,,remove,,,,B1,D1,WT_IgG

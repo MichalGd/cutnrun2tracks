@@ -31,12 +31,24 @@ optional_reference_value() {
     printf '%s' "${!key:-}"
 }
 
+signal_exclude_mask() {
+    local layout="${1:?layout}" duplicate_policy="${2:-remove}"
+    case "$layout:$duplicate_policy" in
+        PE:retain) printf '2828' ;;
+        PE:remove) printf '3852' ;;
+        SE:retain) printf '2820' ;;
+        SE:remove) printf '3844' ;;
+        *) die "unsupported signal-count layout/policy: $layout/$duplicate_policy" ;;
+    esac
+}
+
 signal_count() {
-    local bam="${1:?bam}" layout="${2:?layout}"
+    local bam="${1:?bam}" layout="${2:?layout}" duplicate_policy="${3:-remove}" exclude
+    exclude="$(signal_exclude_mask "$layout" "$duplicate_policy")"
     if [[ "$layout" == "PE" ]]; then
-        samtools view -c -f 66 -F 3840 "$bam"
+        samtools view -c -f 66 -F "$exclude" "$bam"
     else
-        samtools view -c -F 3844 "$bam"
+        samtools view -c -F "$exclude" "$bam"
     fi
 }
 
@@ -56,12 +68,24 @@ policy_bam_path() {
 }
 
 record_command() {
+    is_true "${WRITE_COMMAND_LOG:-true}" || return 0
     local quoted=() argument
     for argument in "$@"; do quoted+=("$(printf '%q' "$argument")"); done
     printf '%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${quoted[*]}" >> "${OUTPUT_DIR}/00_metadata/commands.log"
 }
 
 run_logged() {
+    local quoted=() argument command_text command_id start_utc start_epoch end_utc end_epoch status elapsed
+    for argument in "$@"; do quoted+=("$(printf '%q' "$argument")"); done
+    command_text="${quoted[*]}"
+    command_id="$(date -u +%s).${BASHPID}.${RANDOM}"
+    start_utc="$(date -u +%Y-%m-%dT%H:%M:%SZ)"; start_epoch="$(date -u +%s)"
     record_command "$@"
-    "$@"
+    if "$@"; then status=0; else status=$?; fi
+    end_utc="$(date -u +%Y-%m-%dT%H:%M:%SZ)"; end_epoch="$(date -u +%s)"; elapsed=$((end_epoch-start_epoch))
+    if is_true "${WRITE_COMMAND_LOG:-true}"; then
+        printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$command_id" "$start_utc" "$end_utc" "$elapsed" "$status" "$command_text" \
+            >> "${OUTPUT_DIR}/00_metadata/command_events.tsv"
+    fi
+    return "$status"
 }

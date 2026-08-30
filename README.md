@@ -1,4 +1,4 @@
-# cutnrun2tracks 0.2.8
+# cutnrun2tracks 0.3.0
 
 `cutnrun2tracks` is a samplesheet-driven Bash workflow for paired-end and
 single-end CUT&RUN and CUT&Tag data. It provides assay-aware alignment,
@@ -16,7 +16,7 @@ base; it does not modify or call an ATACseq2tracks installation.
 
 ## Principal capabilities
 
-- explicit run-wide `cutrun` and `cuttag` assay profiles;
+- explicit per-library `cutrun` and `cuttag` assay profiles in the samplesheet;
 - paired-end and single-end inputs, with technical-replicate merging;
 - strict, non-executable configuration parsing and CSV validation;
 - exact replicate-matched IgG, input, or mock control mapping;
@@ -24,16 +24,22 @@ base; it does not modify or call an ATACseq2tracks installation.
 - duplicate marking once and four inspectable MAPQ/duplicate BAM branches;
 - pair-safe canonical-contig and blacklist filtering;
 - CPM, DESeq2-consensus, and three DESeq2 robust-CPM track families;
-- MACS3 `BAMPE` and CUT-specific single-end presets, plus PE-only SEACR;
+- MACS3 `BAMPE` and CUT-specific single-end presets, PE-only SEACR, and an
+  optional epic2 broad-domain sidecar;
 - target-, antibody-, caller-, and peak-class-specific consensus peaks;
-- fragment-aware PE counting, FRiP, fragment length, fingerprints, complexity,
+- technical-unit/merged/trimmed FastQC, fragment-aware PE counting, FRiP,
+  fragment length, NRF/PBC complexity, preseq, target-control fingerprints,
+  cohort-level replicate correlation/PCA, optional strand cross-correlation,
   and descriptive TSS QC;
 - reusable TSS-, TES-, and scaled-gene-body profiles and heatmaps from
   upstream-normalized bigWigs;
 - DESeq2Enrichment and DiffBind target-only analyses, plus separately labelled
   control-subtracted and target-control interaction sensitivity analyses;
-- gene/cCRE overlap annotation, UCSC/IGV assets, provenance, checksummed JSON
-  checkpoints, HTML reporting, and guarded cleanup.
+- annotation of every successful per-sample caller peak set and primary
+  consensus set into promoter, enhancer, exon, intron, gene-end, other
+  regulatory, intergenic, or unclassified categories; absolute/fractional
+  tables and horizontal stacked plots; gene/cCRE overlaps; UCSC/IGV assets;
+  provenance; checksummed JSON checkpoints; HTML reporting; and guarded cleanup.
 
 Different factors and antibody IDs form separate cohorts. The workflow refuses
 to estimate normalization factors across different targets.
@@ -53,7 +59,7 @@ flowchart TD
     SP1 --> SP2[Spike-in counts, QC, and calibrated host tracks]
 
     G --> H[CPM bigWig and bedGraph tracks]
-    G --> I[SEACR and/or MACS3 peaks]
+    G --> I[SEACR, MACS3, and optional epic2 peaks]
     I --> J[Target-specific consensus peaks]
     G --> K[Fragment, complexity, FRiP, fingerprint, and TSS QC]
     H --> K
@@ -70,7 +76,8 @@ flowchart TD
     J --> P[Primary target-only differential enrichment]
     G --> P
     P --> Q[Separately labelled control-aware sensitivity analyses]
-    J --> R[Gene and cCRE annotation]
+    I --> R[Per-peak gene, cCRE, and genomic-feature annotation]
+    J --> R
     N --> S[UCSC and IGV assets]
 
     K --> T[HTML report + provenance]
@@ -168,7 +175,7 @@ git clone https://github.com/MichalGd/cutnrun2tracks.git
 cd cutnrun2tracks
 
 mamba env create -f environment.yml
-conda activate cutnrun2tracks-0.2.8
+conda activate cutnrun2tracks-0.3.0
 
 mkdir -p /path/to/project/config
 cp config/config.conf.template /path/to/project/config/config.conf
@@ -179,16 +186,15 @@ Edit the copied files, then validate the metadata plan and the complete runtime
 environment before processing reads:
 
 ```bash
-bash cutnrun2tracks.sh \
+cutnrun2tracks \
     --config /path/to/project/config/config.conf \
     --plan
 
-bash cutnrun2tracks.sh \
+cutnrun2tracks \
     --config /path/to/project/config/config.conf \
     --preflight-only
 
-bash cutnrun2tracks.sh \
-    --config /path/to/project/config/config.conf
+cutnrun2tracks --config /path/to/project/config/config.conf
 ```
 
 Use `config/examples/cutrun_se.csv`, `cuttag_pe.csv`, or `spikein.csv` as the
@@ -202,14 +208,16 @@ Create the environment with Mamba or Conda:
 
 ```bash
 mamba env create -f environment.yml
-conda activate cutnrun2tracks-0.2.8
+conda activate cutnrun2tracks-0.3.0
 ```
 
-SEACR 1.3 is not installed by the Conda environment. Install it separately from
-the [upstream SEACR repository](https://github.com/FredHutch/SEACR), set its
-immutable path in `SEACR_COMMAND`, and record the downloaded commit and checksum
-in the local environment record. Single-end runs must use MACS3 because this
-workflow rejects SEACR for SE libraries.
+SEACR 1.3 and optional epic2 are isolated from the main environment. Install
+SEACR from the [upstream SEACR repository](https://github.com/FredHutch/SEACR),
+set its immutable path in `SEACR_COMMAND`, and record the downloaded commit and
+checksum. Create the optional epic2 environment from `environment.epic2.yml`
+and expose a version-pinned launcher only when epic2 is listed in
+`PEAK_CALLERS`. Single-end runs must use MACS3 because this workflow rejects
+SEACR for SE libraries.
 
 For deployment beside an existing ATACseq2tracks installation, including the
 recommended cloned-environment strategy, all-user read/execute access, a
@@ -228,7 +236,7 @@ chmod +x cutnrun2tracks.sh scripts/*.sh scripts/*.py \
 Copy `config/config.conf.template` outside the installed code directory and
 edit the copy. At minimum, set:
 
-- `SAMPLESHEET`, `OUTPUT_DIR`, and one run-wide `ASSAY_PROFILE`;
+- `SAMPLESHEET` and `OUTPUT_DIR`;
 - the Bowtie2 index, FASTA, chromosome sizes, canonical contigs, GTF, and
   blacklist for the selected genome;
 - the peak caller and matched-control policy;
@@ -237,7 +245,6 @@ edit the copy. At minimum, set:
 Useful defaults to review explicitly are:
 
 ```bash
-ASSAY_PROFILE=cutrun
 MIN_MAPQ=30
 TARGET_DEFAULT_DUPLICATE_POLICY=retain
 CONTROL_DEFAULT_DUPLICATE_POLICY=remove
@@ -252,6 +259,8 @@ RUN_TARGET_CONTROL_INTERACTION=false
 RUN_METAGENE=false
 SPIKEIN_MODE=none
 ENABLE_AUTOMATIC_CLEANUP=true
+TOTAL_CPU_BUDGET=140
+RESOURCE_CHECK_MODE=fail
 ```
 
 Preprocessing has two independent resource controls. The sample-worker limit
@@ -264,9 +273,10 @@ THREADS_FASTQC=10
 THREADS_TRIMGALORE=8
 ```
 
-These high-capacity-server defaults can request up to roughly 80 CPU threads
-during FastQC and 64 during trimming. Reduce the values when sharing a smaller
-server; do not estimate total use from `QC_SAMPLE_PARALLEL_JOBS` alone.
+These high-capacity-server settings can request up to roughly 80 CPU threads
+during FastQC and 64 during trimming. Preflight writes
+`00_metadata/resource_budget.tsv` and warns or fails if any stage's configured
+jobs x threads exceeds `TOTAL_CPU_BUDGET`.
 
 One samplesheet row is a sequencing unit. Rows with the same `sample_id`,
 `replicate`, and distinct `tech_replicate` values are merged before trimming;
@@ -274,10 +284,21 @@ biological replicates remain independent. A target names its control through
 `control_id`, and the validator requires an exact replicate and biological
 context match unless shared controls are explicitly enabled.
 
+### Migrating a 0.2.x project
+
+Start from the 0.3.0 config template because validation is intentionally
+strict. Copy project-specific values, remove the obsolete run-wide
+`ASSAY_PROFILE`, add the new QC/resource/annotation/logging keys, and remove the
+`blacklist` column from the CSV. Keep each row's `genome`, `layout`, and
+`assay_profile`; set `BLACKLIST_<GENOME>` only in config. Run `--plan`, inspect
+`cohort_membership.tsv`, then run `--preflight-only`. Existing 0.2.x checkpoints
+must not be adopted across this metadata-contract change; start a new output
+directory or rerun from `preflight`.
+
 ## Running, checkpoints, and recovery
 
 ```bash
-bash cutnrun2tracks.sh --config /absolute/path/to/config.conf
+cutnrun2tracks --config /absolute/path/to/config.conf
 ```
 
 Every completed stage writes a JSON checkpoint under
@@ -290,7 +311,7 @@ Reuse validated outputs before a stage, then force that stage and every later
 stage:
 
 ```bash
-bash cutnrun2tracks.sh \
+cutnrun2tracks \
     --config /absolute/path/to/config.conf \
     --from-stage qc
 ```
@@ -305,7 +326,7 @@ earlier starting stage if the change could affect them.
 Stop cleanly after a named stage:
 
 ```bash
-bash cutnrun2tracks.sh \
+cutnrun2tracks \
     --config /absolute/path/to/config.conf \
     --stop-after consensus
 ```
@@ -314,6 +335,13 @@ Automatic cleanup runs only after report generation. Set
 `ENABLE_AUTOMATIC_CLEANUP=false` before the run when intermediates are needed
 for troubleshooting or planned partial reruns. See
 [Outputs and recovery](docs/04_outputs_and_recovery.md).
+
+The launcher records raw stdout/stderr in
+`logs/cutnrun2tracks.console.log`, structured stage events in
+`00_metadata/workflow_events.tsv`, command-level events in
+`00_metadata/command_events.tsv`, and elapsed stage times in
+`00_metadata/stage_timing.tsv`. A user-supplied `nohup` redirection remains a
+second, simple console log and does not replace these internal records.
 
 The final report stage writes the interactive
 `10_reports/cutnrun2tracks_multiqc_report.html` together with exported MultiQC
@@ -334,14 +362,14 @@ bash utilities/regenerate_reports.sh --output-dir /absolute/path/to/results
 | 3 | `alignment` | Bowtie2 host alignment and optional competitive spike alignment |
 | 4 | `filtering` | Mark duplicates; produce four MAPQ/duplicate-policy BAM branches |
 | 5 | `cpm` | Per-sample fragment/read CPM bigWig and bedGraph tracks |
-| 6 | `peakcalling` | Matched-control SEACR and/or MACS3 calls with per-sample fault isolation |
+| 6 | `peakcalling` | Matched-control SEACR/MACS3/optional epic2 calls with per-sample fault isolation |
 | 7 | `consensus` | Target-specific consensus from successful primary peak sets, with exclusions reported |
 | 8 | `spikein` | Spike-in counts, QC, calibrated host tracks, and control tracks |
 | 9 | `normalized_tracks` | DESeq2-consensus and robust-CPM track families |
 | 10 | `metagene` | Optional TSS, TES, and scaled-gene-body plots and heatmaps |
-| 11 | `qc` | Complexity, fragments, FRiP, fingerprints, TSS, and optional experimental ataqv |
+| 11 | `qc` | Complexity, fragments, FRiP, fingerprints, replicate correlation/PCA, TSS, and optional cross-correlation/ataqv |
 | 12 | `differential` | Primary raw-count enrichment and optional control-aware sensitivity models |
-| 13 | `annotation` | Gene/cCRE overlaps plus UCSC and IGV assets |
+| 13 | `annotation` | All-peak feature classes/counts/fractions/plots, gene/cCRE overlaps, and UCSC/IGV assets |
 | 14 | `report` | Unified MultiQC report, lightweight HTML report, and reporting tables |
 | 15 | `cleanup` | Guarded removal of configured intermediates after report success |
 | 16 | `finalize` | Final file checksums and completion checkpoint |
@@ -366,7 +394,7 @@ bash utilities/regenerate_reports.sh --output-dir /absolute/path/to/results
 │   ├── spikein/                    calibrated host tracks
 │   └── spikein_control/            spike-reference control tracks
 ├── 05_peaks/
-│   ├── per_sample/                 SEACR and/or MACS3 peaks
+│   ├── per_sample/                 SEACR, MACS3, and optional epic2 peaks
 │   └── consensus/                  cohort/caller/peak-class consensus sets
 ├── 06_qc/                          QC tables, plots, metagene results, spike-in QC
 ├── 07_annotation/                  consensus and differential annotations

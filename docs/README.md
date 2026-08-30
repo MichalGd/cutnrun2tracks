@@ -17,7 +17,7 @@ summary, and principal output tree.
 
 | Topic | Document |
 |---|---|
-| PE/SE signal units, filtering branches, CPM and DESeq2 track formulas, cohort isolation, and caller behavior | [Methods and normalization](02_methods.md) |
+| PE/SE signal units, filtering branches, CPM/DESeq2 formulas, QC definitions, epic2, cohort isolation, and all-peak genomic-feature annotation | [Methods, normalization, QC, and annotation](02_methods.md) |
 | The distinct roles of IgG/input/mock controls, primary raw-count models, DiffBind, and sensitivity analyses | [Controls and differential enrichment](03_differential_enrichment.md) |
 | TSS/TES/gene-body aggregate plots, BED12 reference preparation, HPA subsets, manifests, and standalone reuse | [Metagene aggregate-signal module](06_metagene.md) |
 
@@ -25,7 +25,7 @@ summary, and principal output tree.
 
 | Topic | Document |
 |---|---|
-| Output organization, checkpoint recovery, partial reruns, and guarded cleanup | [Outputs and recovery](04_outputs_and_recovery.md) |
+| Output organization, annotation summary files, structured/raw logs, checkpoint recovery, partial reruns, and guarded cleanup | [Outputs and recovery](04_outputs_and_recovery.md) |
 | Scientific limitations and real-data pilot decisions | [Limitations and pilot decisions](05_limitations.md) |
 | Synthetic coverage and outstanding Linux/real-data fixtures | [Test matrix](06_test_matrix.md) |
 
@@ -35,6 +35,6 @@ summary, and principal output tree.
 - [Contribution requirements](../CONTRIBUTING.md)
 - [Metagene shared-module interface](../common/metagene/README.md)
 
-Documentation describes version 0.2.8 unless a page explicitly says otherwise.
+Documentation describes version 0.3.0 unless a page explicitly says otherwise.
 The executable behavior is defined by `cutnrun2tracks.sh`, the scripts under
 `scripts/`, and the validated configuration template.

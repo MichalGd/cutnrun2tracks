@@ -11,6 +11,7 @@ args=(
     --cohort-manifest "$COHORT_MANIFEST"
     --output-root "${OUTPUT_DIR}/05_peaks/consensus"
     --minimum-support "$CONSENSUS_MIN_BIOLOGICAL_SAMPLES"
+    --jobs "$MERGE_PARALLEL_JOBS"
 )
 is_true "$ALLOW_SINGLE_SAMPLE_CONSENSUS" && args+=(--allow-single)
 is_true "$REQUIRE_ALL_ENABLED_TRACKS" && args+=(--require-all)

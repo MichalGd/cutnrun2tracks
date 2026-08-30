@@ -14,7 +14,7 @@ from pathlib import Path
 
 BOOLEAN_KEYS = {
     "ALLOW_MIXED_LAYOUTS", "ALLOW_MIXED_GENOMES", "TRIM_ADAPTERS",
-    "RUN_FASTQC", "RUN_MULTIQC", "BOWTIE2_DOVETAIL", "BOWTIE2_MIXED",
+    "RUN_FASTQC", "RUN_FASTQC_PER_TECHNICAL_UNIT", "RUN_MULTIQC", "BOWTIE2_DOVETAIL", "BOWTIE2_MIXED",
     "BOWTIE2_DISCORDANT", "CANONICAL_CHROMS_ONLY", "REMOVE_MITO",
     "ALLOW_EMPTY_FILTERED_BAM", "MARK_DUPLICATES",
     "GENERATE_DUPLICATE_RETAINED_BAMS", "GENERATE_DUPLICATE_REMOVED_BAMS",
@@ -30,16 +30,19 @@ BOOLEAN_KEYS = {
     "TRACK_STANDARD_CHROMS_ONLY", "ALLOW_FAILED_SPIKEIN",
     "GENERATE_SPIKEIN_CONTROL_TRACKS", "RUN_FRAGMENT_QC",
     "RUN_TSS_SIGNAL_PROFILE", "RUN_ATAQV_QC", "GENERATE_ATAQV_VIEWER",
-    "RUN_PRESEQ", "RUN_DIFFBIND", "RUN_DESEQ2_ENRICHMENT",
+    "RUN_PRESEQ", "RUN_LIBRARY_COMPLEXITY", "RUN_CROSS_CORRELATION",
+    "RUN_REPLICATE_CORRELATION", "RUN_DIFFBIND", "RUN_DESEQ2_ENRICHMENT",
     "RUN_METAGENE", "METAGENE_ALLOW_CPM_FALLBACK",
     "METAGENE_INCLUDE_CONTROLS", "METAGENE_SKIP_ZERO_REGIONS",
     "DIFFERENTIAL_SUBTRACT_CONTROL", "RUN_CONTROL_SUBTRACTED_SENSITIVITY",
     "RUN_TARGET_CONTROL_INTERACTION", "REQUIRE_CONDITION_MATCHED_CONTROLS",
     "RUN_SIMPLE_PEAK_ANNOTATION", "RUN_CCRE_ANNOTATION",
+    "RUN_FEATURE_ANNOTATION_SUMMARY", "PEAK_ANNOTATION_INCLUDE_CONSENSUS",
     "RUN_MOTIF_ENRICHMENT", "ENABLE_AUTOMATIC_CLEANUP",
     "KEEP_TRIMMED_FASTQ", "KEEP_RAW_ALIGNMENT_BAMS", "KEEP_MARKED_BAMS",
     "KEEP_FILTERED_BAMS", "KEEP_POLICY_BAMS", "KEEP_RAW_BEDGRAPH",
     "KEEP_SPIKEIN_BAMS", "WRITE_IGV_SESSION", "WRITE_COMMAND_LOG",
+    "WRITE_STRUCTURED_LOG", "WRITE_CONSOLE_LOG",
     "WRITE_FILE_CHECKSUMS", "REDACT_PATHS_IN_REPORT",
 }
 
@@ -48,7 +51,8 @@ POSITIVE_INTEGER_KEYS = {
     "THREADS_FASTQC", "THREADS_TRIMGALORE",
     "THREADS_BOWTIE2", "THREADS_SAMTOOLS", "MIN_MAPQ",
     "CONSENSUS_MIN_BIOLOGICAL_SAMPLES", "SEACR_MAX_FRAGMENT",
-    "MACS3_CUTRUN_SE_EXTSIZE", "MACS3_CUTTAG_SE_EXTSIZE", "TRACK_BIN_SIZE",
+    "MACS3_CUTRUN_SE_EXTSIZE", "MACS3_CUTTAG_SE_EXTSIZE",
+    "EPIC2_BIN_SIZE", "EPIC2_GAP_SIZE", "EPIC2_FRAGMENT_SIZE", "TRACK_BIN_SIZE",
     "THREADS_BAMCOVERAGE", "SPIKEIN_MIN_MAPQ", "SPIKEIN_MIN_OBSERVATIONS_FAIL",
     "SPIKEIN_MIN_OBSERVATIONS_WARN", "FRAGMENT_PLOT_MAX_BP",
     "TSS_PROFILE_UPSTREAM", "TSS_PROFILE_DOWNSTREAM",
@@ -56,6 +60,8 @@ POSITIVE_INTEGER_KEYS = {
     "PEAK_ANNOTATION_PROMOTER_DOWNSTREAM", "THREADS_PARALLEL_JOBS",
     "QC_SAMPLE_PARALLEL_JOBS", "TRACK_PARALLEL_JOBS",
     "PEAKCALL_PARALLEL_JOBS", "MERGE_PARALLEL_JOBS", "SPIKEIN_PARALLEL_JOBS",
+    "NORMALIZED_TRACK_PARALLEL_JOBS", "DIFFERENTIAL_PARALLEL_JOBS",
+    "ANNOTATION_PARALLEL_JOBS", "CHECKPOINT_PARALLEL_JOBS", "CHECKSUM_PARALLEL_JOBS",
     "ATAQV_PARALLEL_JOBS", "THREADS_ATAQV", "ATAQV_TSS_EXTENSION",
     "METAGENE_BODY_LENGTH_BP", "METAGENE_BIN_SIZE_BP", "METAGENE_DPI",
     "METAGENE_THREADS_COMPUTEMATRIX", "METAGENE_PARALLEL_JOBS",
@@ -65,24 +71,24 @@ NONNEGATIVE_INTEGER_KEYS = {
     "BOWTIE2_SEED", "PERMISSIVE_MIN_MAPQ", "INTERMEDIATE_MIN_MAPQ",
     "METAGENE_REFERENCE_UPSTREAM_BP", "METAGENE_REFERENCE_DOWNSTREAM_BP",
     "METAGENE_BODY_UPSTREAM_BP", "METAGENE_BODY_DOWNSTREAM_BP",
+    "PEAK_ANNOTATION_GENE_END_WINDOW",
 }
 
 FLOAT_KEYS = {
-    "SEACR_NO_CONTROL_THRESHOLD", "MACS3_QVALUE", "MACS3_BROAD_CUTOFF",
+    "SEACR_NO_CONTROL_THRESHOLD", "MACS3_QVALUE", "MACS3_BROAD_CUTOFF", "EPIC2_FDR",
     "SPIKEIN_SCALE_TARGET", "SPIKEIN_WARN_LOW_FRACTION",
     "SPIKEIN_WARN_HIGH_FRACTION", "DIFFERENTIAL_ALPHA",
     "DIFFERENTIAL_MIN_ABS_LOG2FC",
 }
 
 ENUMS = {
-    "ASSAY_PROFILE": {"cutrun", "cuttag"},
     "BOWTIE2_MODE": {"end-to-end", "local"},
     "BOWTIE2_PRESET": {"very-sensitive", "sensitive", "very-sensitive-local", "sensitive-local"},
     "BOWTIE2_REPORTING": {"best"},
     "TARGET_DEFAULT_DUPLICATE_POLICY": {"retain", "remove"},
     "CONTROL_DEFAULT_DUPLICATE_POLICY": {"retain", "remove"},
     "SPIKEIN_DUPLICATE_POLICY": {"retain", "remove"},
-    "PRIMARY_PEAK_CALLER": {"auto", "seacr", "macs3"},
+    "PRIMARY_PEAK_CALLER": {"auto", "seacr", "macs3", "epic2"},
     "PEAKCALL_FAILURE_POLICY": {"fail", "continue"},
     "SEACR_MODE": {"stringent", "relaxed"},
     "SEACR_CONTROL_NORMALIZATION": {"norm", "non"},
@@ -96,10 +102,11 @@ ENUMS = {
     "DIFFERENTIAL_NORMALIZATION": {"deseq2", "spikein"},
     "DIFFERENTIAL_CONTROL_MODE": {"peak_calling_only", "control_subtracted", "interaction"},
     "CHECKPOINT_MODE": {"signature_and_outputs"},
+    "RESOURCE_CHECK_MODE": {"warn", "fail"},
 }
 
 REFERENCE_KEY = re.compile(
-    r"^(INDEX|FASTA|CHROM_SIZES|CANONICAL_CONTIGS|GTF|BLACKLIST|TSS_BED|CCRE_BED)_[A-Z0-9_]+$"
+    r"^(INDEX|FASTA|CHROM_SIZES|CANONICAL_CONTIGS|GTF|BLACKLIST|EFFECTIVE_GENOME_SIZE|TSS_BED|CCRE_BED)_[A-Z0-9_]+$"
 )
 KEY_RE = re.compile(r"^[A-Z][A-Z0-9_]*$")
 
@@ -194,22 +201,22 @@ def validate(values: dict[str, str], required_keys: set[str]) -> list[str]:
             values[key] = values[key].lower()
 
     callers = [item.strip().lower() for item in values.get("PEAK_CALLERS", "").split(",") if item.strip()]
-    if not callers or not set(callers) <= {"seacr", "macs3"}:
-        errors.append("PEAK_CALLERS must be a comma-separated subset of seacr,macs3")
+    if not callers or not set(callers) <= {"seacr", "macs3", "epic2"}:
+        errors.append("PEAK_CALLERS must be a comma-separated subset of seacr,macs3,epic2")
     values["PEAK_CALLERS"] = ",".join(dict.fromkeys(callers))
+    if values.get("PRIMARY_PEAK_CALLER") not in {"auto", *callers}:
+        errors.append("PRIMARY_PEAK_CALLER must be auto or an enabled PEAK_CALLERS value")
 
     if values.get("BOWTIE2_MAX_INSERT", "0").isdigit() and values.get("BOWTIE2_MIN_INSERT", "0").isdigit():
         if int(values["BOWTIE2_MAX_INSERT"]) < int(values["BOWTIE2_MIN_INSERT"]):
             errors.append("BOWTIE2_MAX_INSERT must be >= BOWTIE2_MIN_INSERT")
-    if values.get("ASSAY_PROFILE") not in {"cutrun", "cuttag"}:
-        errors.append("ASSAY_PROFILE must be cutrun or cuttag")
     if values.get("SPIKEIN_MODE") != "none":
         for key in ("SPIKEIN_REFERENCE_ID", "SPIKEIN_INDEX", "SPIKEIN_FASTA", "SPIKEIN_CHROM_SIZES", "SPIKEIN_ALLOWED_CONTIGS"):
             if not values.get(key):
                 errors.append(f"{key} is required when SPIKEIN_MODE is enabled")
     if values.get("DIFFERENTIAL_NORMALIZATION") == "spikein" and values.get("SPIKEIN_MODE") == "none":
         errors.append("DIFFERENTIAL_NORMALIZATION=spikein requires SPIKEIN_MODE")
-    for key in ("SEACR_NO_CONTROL_THRESHOLD", "MACS3_QVALUE", "MACS3_BROAD_CUTOFF",
+    for key in ("SEACR_NO_CONTROL_THRESHOLD", "MACS3_QVALUE", "MACS3_BROAD_CUTOFF", "EPIC2_FDR",
                 "SPIKEIN_WARN_LOW_FRACTION", "SPIKEIN_WARN_HIGH_FRACTION", "DIFFERENTIAL_ALPHA"):
         if key in values:
             try:
@@ -219,8 +226,22 @@ def validate(values: dict[str, str], required_keys: set[str]) -> list[str]:
                 pass
     if values.get("DIFFERENTIAL_SUBTRACT_CONTROL") == "true":
         errors.append("DIFFERENTIAL_SUBTRACT_CONTROL cannot alter the primary model; use RUN_CONTROL_SUBTRACTED_SENSITIVITY=true")
-    if values.get("RUN_ATAQV_QC") == "true" and values.get("ASSAY_PROFILE") not in {"cutrun", "cuttag"}:
-        errors.append("RUN_ATAQV_QC is only an experimental CUT profile output")
+    total_cpu_budget = values.get("TOTAL_CPU_BUDGET", "")
+    if total_cpu_budget != "auto":
+        try:
+            if int(total_cpu_budget) <= 0:
+                raise ValueError
+        except ValueError:
+            errors.append("TOTAL_CPU_BUDGET must be auto or a positive integer")
+    precedence = [item.strip().lower() for item in values.get("PEAK_ANNOTATION_FEATURE_PRECEDENCE", "").split(",") if item.strip()]
+    expected_categories = {"promoter", "enhancer", "exon", "intron", "gene_end", "other_regulatory", "intergenic", "unclassified"}
+    if len(precedence) != len(expected_categories) or set(precedence) != expected_categories:
+        errors.append("PEAK_ANNOTATION_FEATURE_PRECEDENCE must contain each supported category exactly once")
+    values["PEAK_ANNOTATION_FEATURE_PRECEDENCE"] = ",".join(precedence)
+    annotation_formats = [item.strip().lower() for item in values.get("PEAK_ANNOTATION_PLOT_FORMATS", "").split(",") if item.strip()]
+    if not annotation_formats or not set(annotation_formats) <= {"png", "pdf", "svg"}:
+        errors.append("PEAK_ANNOTATION_PLOT_FORMATS must be a nonempty subset of png,pdf,svg")
+    values["PEAK_ANNOTATION_PLOT_FORMATS"] = ",".join(dict.fromkeys(annotation_formats))
     gene_sets = [item.strip() for item in values.get("METAGENE_GENE_SETS", "").split(",") if item.strip()]
     if not gene_sets or any(not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", item) for item in gene_sets):
         errors.append("METAGENE_GENE_SETS must be a nonempty comma-separated list of safe IDs")

@@ -37,7 +37,7 @@ The instructions use four shared, read-only runtime locations:
 
 ```text
 /opt/bioinformatics/workflows/cutnrun2tracks/
-/opt/miniconda/envs/cutnrun2tracks-0.2.0/
+/opt/miniconda/envs/cutnrun2tracks-0.3.0/
 /opt/bioinformatics/tools/SEACR/releases/1.3/
 /opt/bioinformatics/references/
 ```
@@ -61,20 +61,22 @@ non-administrator account, not only as root or the deployment owner.
 ## Why cloning is preferable for the first server pilot
 
 The installed ATAC environment already provides nearly all CUT dependencies:
-Bowtie2, samtools, bedtools, Picard, Trim Galore/cutadapt, FastQC, MultiQC,
+Bowtie2, samtools, bedtools, Picard, Trim Galore, FastQC, MultiQC,
 MACS3, deepTools, R, DESeq2, DiffBind, GenomicRanges, GenomicAlignments,
-Rsamtools, rtracklayer, BiocParallel, ggplot2, pandas, and matplotlib.
+Rsamtools, rtracklayer, BiocParallel, ggplot2, and matplotlib.
 
 The CUT specification adds or makes explicit:
 
 | Component | Role | Expected action after cloning |
 |---|---|---|
-| Bash 4.4+ | workflow runtime | Verify; install the pinned Conda Bash if needed |
+| Bash 5.1+ | workflow runtime | Verify; install the pinned Conda Bash if needed |
 | `preseq` | optional/default complexity extrapolation | Install or set `RUN_PRESEQ=false` |
 | `pyBigWig` | metagene bigWig validation | Install if `RUN_METAGENE=true` |
 | `ucsc-bedClip` | environment-specification parity | Install; not a current preflight command |
-| `cutadapt` | Trim Galore backend | Normally already present transitively; verify |
+| `cutadapt` | Trim Galore backend | Install the pinned standalone command |
+| `pandas` | metagene reference and summary utilities | Install into the CUT clone |
 | SEACR 1.3 | CUT peak calling | Install separately and pin the exact revision |
+| epic2 sidecar | optional broad-domain peak calling | Create from `environment.epic2.yml`; expose only a version-pinned launcher |
 
 The repository's `environment.lock.yml` is a platform-neutral version
 constraint file, not a resolved `conda-lock` artifact with exact Linux package
@@ -92,11 +94,13 @@ handling to the server's local policy.
 set -euo pipefail
 umask 022
 
-CUT_VERSION=0.2.0
+CUT_VERSION=0.3.0
+CUT_COMMIT=REPLACE_WITH_RELEASE_COMMIT
+CUT_STAGE="/home/micgdu/Analysis/workflows/cutnrun2tracks/install_sources/${CUT_VERSION}"
 CUT_WORKFLOW_ROOT=/opt/bioinformatics/workflows/cutnrun2tracks
 CUT_RELEASE_DIR="${CUT_WORKFLOW_ROOT}/releases/${CUT_VERSION}"
 CUT_DEPLOYMENT_DIR="${CUT_WORKFLOW_ROOT}/deployment/${CUT_VERSION}"
-CUT_ENV=/opt/miniconda/envs/cutnrun2tracks-0.2.0
+CUT_ENV=/opt/miniconda/envs/cutnrun2tracks-0.3.0
 ATAC_ENV=/opt/miniconda/envs/ATACseq2tracks
 ATAC_CURRENT=/opt/bioinformatics/workflows/ATACseq2tracks/current
 SEACR_RELEASE=/opt/bioinformatics/tools/SEACR/releases/1.3
@@ -191,41 +195,71 @@ done
 Stop and resolve every `FAIL` before deployment. Do not copy large references
 into the workflow release directory.
 
-## 3. Deploy an immutable workflow revision
+## 3. Deploy the immutable offline release
 
-The public repository did not have a release tag when this guide was prepared.
-Use the full SHA of the reviewed commit; do not deploy a moving `main` branch.
-Replace the placeholder below with the intended 40-character commit SHA.
+Set `CUT_COMMIT` to the exact commit referenced by the signed/tagged
+`v${CUT_VERSION}` release. Transfer the archive, its portable SHA-256 sidecar,
+and the commit record from the administrator workstation into
+`$CUT_STAGE`. The server does not need GitHub access. Keep all CUT-specific
+staging material under `/home/micgdu/Analysis/workflows/`; only the shared,
+root-owned runtime installation belongs under `/opt`.
+
+Validate the staged release before using administrator privileges:
 
 ```bash
-CUT_GIT_REF=REPLACE_WITH_FULL_REVIEWED_COMMIT_SHA
-[[ "$CUT_GIT_REF" =~ ^[0-9a-f]{40}$ ]]
+cd "$CUT_STAGE"
+sha256sum -c "cutnrun2tracks-${CUT_VERSION}.tar.gz.sha256"
 
-mkdir -p "$CUT_WORKFLOW_ROOT/releases" "$CUT_DEPLOYMENT_DIR"
-git clone https://github.com/MichalGd/cutnrun2tracks.git "$CUT_RELEASE_DIR"
-git -C "$CUT_RELEASE_DIR" checkout --detach "$CUT_GIT_REF"
-
-test "$(git -C "$CUT_RELEASE_DIR" rev-parse HEAD)" = "$CUT_GIT_REF"
-test "$(cat "$CUT_RELEASE_DIR/VERSION")" = "$CUT_VERSION"
-
-git -C "$CUT_RELEASE_DIR" status --short
-git -C "$CUT_RELEASE_DIR" rev-parse HEAD > "$CUT_DEPLOYMENT_DIR/workflow_commit.txt"
+test "$(tr -d '\r\n' < "cutnrun2tracks-${CUT_VERSION}.commit.txt")" = \
+    "$CUT_COMMIT"
+test "$(tar -xOzf "cutnrun2tracks-${CUT_VERSION}.tar.gz" \
+    "cutnrun2tracks-${CUT_VERSION}/VERSION" | tr -d '\r\n')" = \
+    "$CUT_VERSION"
 ```
 
-`git status --short` should be empty. A Git clone preserves the executable modes
-recorded by Git; the documented launch commands also invoke entry points through
-`bash` or `python3`. Prefer creating a signed `v0.2.0` tag in
-the repository after review; a future installation can then verify both the tag
-and resolved commit.
+Install the candidate release without creating `current`:
+
+```bash
+sudo install -d -o root -g root -m 0755 \
+    "$CUT_WORKFLOW_ROOT" \
+    "$CUT_WORKFLOW_ROOT/releases" \
+    "$CUT_WORKFLOW_ROOT/deployment" \
+    "$CUT_RELEASE_DIR" \
+    "$CUT_DEPLOYMENT_DIR"
+
+sudo tar --extract --gzip \
+    --file "$CUT_STAGE/cutnrun2tracks-${CUT_VERSION}.tar.gz" \
+    --directory "$CUT_RELEASE_DIR" \
+    --strip-components=1 --no-same-owner
+
+sudo install -o root -g root -m 0644 \
+    "$CUT_STAGE/cutnrun2tracks-${CUT_VERSION}.commit.txt" \
+    "$CUT_DEPLOYMENT_DIR/workflow_commit.txt"
+sudo install -o root -g root -m 0644 \
+    "$CUT_STAGE/cutnrun2tracks-${CUT_VERSION}.tar.gz.sha256" \
+    "$CUT_DEPLOYMENT_DIR/workflow_archive.sha256"
+
+sudo chown -R root:root "$CUT_RELEASE_DIR" "$CUT_DEPLOYMENT_DIR"
+sudo chmod -R a+rX "$CUT_RELEASE_DIR" "$CUT_DEPLOYMENT_DIR"
+sudo chmod -R go-w "$CUT_RELEASE_DIR" "$CUT_DEPLOYMENT_DIR"
+
+test "$(tr -d '\r\n' < "$CUT_RELEASE_DIR/VERSION")" = "$CUT_VERSION"
+test "$(tr -d '\r\n' < "$CUT_DEPLOYMENT_DIR/workflow_commit.txt")" = \
+    "$CUT_COMMIT"
+test -r "$CUT_RELEASE_DIR/cutnrun2tracks.sh"
+```
+
+The entry point is intentionally invoked through `bash`; repository mode
+`100644` is therefore valid as long as the file is readable.
 
 ## 4. Clone and extend the ATAC environment safely
 
 Clone the validated environment to the new prefix:
 
 ```bash
-source /opt/miniconda/etc/profile.d/conda.sh
-conda create --yes --copy --prefix "$CUT_ENV" --clone "$ATAC_ENV"
-conda activate "$CUT_ENV"
+sudo -H nice -n 10 ionice -c 2 -n 7 \
+    /opt/miniconda/bin/conda create --yes --copy \
+    --prefix "$CUT_ENV" --clone "$ATAC_ENV"
 ```
 
 `--copy` avoids hard-linking CUT environment files to the shared Conda package
@@ -235,50 +269,60 @@ clone, but makes subsequent CUT permission and package management independent.
 Record the clone before adding packages:
 
 ```bash
-conda list --explicit > "$CUT_DEPLOYMENT_DIR/conda-before-cut-additions.explicit.txt"
+/opt/miniconda/bin/conda list --prefix "$CUT_ENV" --explicit | \
+    sudo tee \
+    "$CUT_DEPLOYMENT_DIR/conda-before-cut-additions.explicit.txt" \
+    >/dev/null
 ```
 
 Check which additions are actually missing:
 
 ```bash
 for command_name in bash cutadapt preseq bedClip; do
-    command -v "$command_name" || printf 'MISSING\t%s\n' "$command_name"
+    candidate="$CUT_ENV/bin/$command_name"
+    if [[ -x "$candidate" ]]; then
+        printf 'ENV_OK\t%s\n' "$candidate"
+    else
+        printf 'ENV_MISSING\t%s\n' "$command_name"
+    fi
 done
 
-python3 -c 'import pyBigWig; print(pyBigWig.__version__)' || \
-    printf 'MISSING\tpyBigWig\n'
+"$CUT_ENV/bin/python3" -c '
+import importlib.util
+for module in ("pyBigWig", "pandas", "matplotlib"):
+    print(f"{module}\t{importlib.util.find_spec(module) is not None}")
+'
 ```
 
-Install only missing packages. `--freeze-installed` minimizes changes to the
-tested clone; inspect the solver transaction and abort if it proposes major
-R/Bioconductor/Python changes.
+The audited ATAC clone lacks Conda Bash, standalone cutadapt, preseq, bedClip,
+and pandas. First perform a dry run. `--freeze-installed` minimizes changes to
+the tested clone; abort if the solver proposes major R/Bioconductor/Python,
+deepTools, pyBigWig, or MACS3 changes.
 
 ```bash
-if command -v mamba >/dev/null 2>&1; then
-    CUT_CONDA_SOLVER=mamba
-else
-    CUT_CONDA_SOLVER=conda
-fi
-
-"$CUT_CONDA_SOLVER" install --yes --copy --prefix "$CUT_ENV" --freeze-installed \
+sudo -H /opt/miniconda/bin/conda install --dry-run --copy \
+    --prefix "$CUT_ENV" --freeze-installed --override-channels \
     --channel conda-forge --channel bioconda \
-    bash=5.2 preseq=3.2.0 pybigwig ucsc-bedclip
+    bash=5.2 cutadapt=5.1 preseq=3.2.0 ucsc-bedclip pandas
 ```
 
-Trim Galore normally brings in cutadapt. If `command -v cutadapt` still fails,
-install the version declared by the CUT environment specification with the same
-frozen transaction approach.
+After reviewing and accepting that transaction, repeat it with `--yes` in place
+of `--dry-run`. Do not reinstall deepTools or pyBigWig merely because they are
+not listed among the additions; the clone already contains the validated
+versions.
 
 Record the completed environment:
 
 ```bash
-conda list --explicit > "$CUT_DEPLOYMENT_DIR/conda-linux-64.explicit.txt"
-conda env export --prefix "$CUT_ENV" > "$CUT_DEPLOYMENT_DIR/conda-environment.yml"
+/opt/miniconda/bin/conda list --prefix "$CUT_ENV" --explicit | \
+    sudo tee "$CUT_DEPLOYMENT_DIR/conda-linux-64.explicit.txt" >/dev/null
+/opt/miniconda/bin/conda env export --prefix "$CUT_ENV" | \
+    sudo tee "$CUT_DEPLOYMENT_DIR/conda-environment.yml" >/dev/null
 sha256sum \
     "$CUT_DEPLOYMENT_DIR/conda-before-cut-additions.explicit.txt" \
     "$CUT_DEPLOYMENT_DIR/conda-linux-64.explicit.txt" \
-    "$CUT_DEPLOYMENT_DIR/conda-environment.yml" > \
-    "$CUT_DEPLOYMENT_DIR/conda-provenance.sha256"
+    "$CUT_DEPLOYMENT_DIR/conda-environment.yml" | \
+    sudo tee "$CUT_DEPLOYMENT_DIR/conda-provenance.sha256" >/dev/null
 ```
 
 The explicit package file is the reliable same-platform recreation artifact.
@@ -394,6 +438,7 @@ CHROM_SIZES_HG38=/opt/bioinformatics/references/hg38/hg38.chrom.sizes
 CANONICAL_CONTIGS_HG38=/opt/bioinformatics/references/cutnrun2tracks/0.2.0/hg38/hg38.canonical_contigs.txt
 GTF_HG38=/opt/bioinformatics/ATACseq2tracks_shared/references/hg38/annotation.gtf
 BLACKLIST_HG38=/opt/bioinformatics/ATACseq2tracks_shared/references/hg38/hg38.blacklist.bed
+EFFECTIVE_GENOME_SIZE_HG38=2913022398
 TSS_BED_HG38=
 CCRE_BED_HG38=/opt/bioinformatics/ATACseq2tracks_shared/references/hg38/hg38.ccre.bed.gz
 ```
@@ -407,6 +452,7 @@ CHROM_SIZES_MM39=/opt/bioinformatics/references/mm39/mm39.chrom.sizes
 CANONICAL_CONTIGS_MM39=/opt/bioinformatics/references/cutnrun2tracks/0.2.0/mm39/mm39.canonical_contigs.txt
 GTF_MM39=/opt/bioinformatics/ATACseq2tracks_shared/references/mm39/annotation.gtf
 BLACKLIST_MM39=/opt/bioinformatics/ATACseq2tracks_shared/references/mm39/mm39.blacklist.bed
+EFFECTIVE_GENOME_SIZE_MM39=2654621783
 TSS_BED_MM39=
 CCRE_BED_MM39=/opt/bioinformatics/ATACseq2tracks_shared/references/mm39/mm39.ccre.bed
 ```
@@ -423,7 +469,6 @@ SEACR_COMMAND=/opt/bioinformatics/tools/SEACR/releases/1.3/SEACR_1.3.sh
 Recommended first-pilot settings are:
 
 ```text
-ASSAY_PROFILE=cutrun
 SPIKEIN_MODE=none
 RUN_METAGENE=false
 RUN_ATAQV_QC=false
@@ -432,14 +477,12 @@ RUN_MOTIF_ENRICHMENT=false
 ENABLE_AUTOMATIC_CLEANUP=false
 ```
 
-Change `ASSAY_PROFILE=cuttag` for a separate CUT&Tag run. Do not mix assay
-profiles, genomes, or PE/SE layouts in the first validation run. For SE data,
-set `PEAK_CALLERS=macs3`; SEACR is PE-only in this workflow.
-
-The samplesheet `blacklist` column must also contain the matching absolute
-blacklist path for every row. Review control IDs carefully: a target must map to
-the correct biological-replicate IgG/input/mock control, with no implicit
-replicate fallback.
+Set each row's `assay_profile` to `cutrun` or `cuttag`; there is no duplicate
+run-wide assay setting. Do not mix genomes or PE/SE layouts in the first
+validation run. For SE data, set `PEAK_CALLERS=macs3`; SEACR is PE-only.
+Reference/blacklist paths belong only in config and are resolved from the row's
+genome. Review control IDs carefully: a target must map to the correct
+biological-replicate IgG/input/mock control, with no implicit replicate fallback.
 
 ## 8. Validate the installed software without processing reads
 
@@ -593,7 +636,7 @@ SPIKEIN_BLACKLIST=/opt/bioinformatics/references/cutnrun2tracks/0.2.0/dm6_namesp
 
 Use the `mm39_dm6` index and composite FASTA for mouse.
 
-Important v0.2.0 limitation: `SPIKEIN_BLACKLIST` is recorded in reference
+Current limitation: `SPIKEIN_BLACKLIST` is recorded in reference
 provenance, but the current `spikein_batch.sh` does not apply it to the spike
 BAM. Treat spike-in outputs as development/pilot results until that behavior is
 explicitly corrected or accepted and tested. Also verify that the namespaced
@@ -617,42 +660,43 @@ readlink -f "$CUT_WORKFLOW_ROOT/current"
 cat "$CUT_WORKFLOW_ROOT/current/VERSION"
 ```
 
-Document for users that each job must activate the CUT environment, not the
-ATAC environment:
+### Required system-wide launcher
+
+Install the repository-provided root-owned launcher. It pins the release and
+main environment, exports a controlled PATH, and does not require interactive
+Conda activation or inherit an ATAC/base environment.
 
 ```bash
-source /opt/miniconda/etc/profile.d/conda.sh
-conda activate /opt/miniconda/envs/cutnrun2tracks-0.2.0
+sudo install -o root -g root -m 0755 \
+  "$CUT_RELEASE_DIR/utilities/cutnrun2tracks_shared_launcher.sh" \
+  /usr/local/bin/cutnrun2tracks
 
-bash /opt/bioinformatics/workflows/cutnrun2tracks/current/cutnrun2tracks.sh \
-    --config /absolute/path/to/project/config/config.conf
+CUTNRUN2TRACKS_MAIN_ENV=/opt/miniconda/envs/cutnrun2tracks-0.3.0 \
+  /usr/local/bin/cutnrun2tracks --version
 ```
 
-### Optional system-wide launcher
-
-For the simplest all-user interface, install a small root-owned launcher at
-`/usr/local/bin/cutnrun2tracks`. It activates the correct environment through
-`conda run`, so users cannot accidentally execute the workflow in the ATAC or
-base environment.
+When epic2 is enabled, create its sidecar and install the companion launcher:
 
 ```bash
-CUT_WRAPPER_TMP="$(mktemp)"
-cat > "$CUT_WRAPPER_TMP" <<'WRAPPER'
-#!/usr/bin/env bash
-set -euo pipefail
-exec /opt/miniconda/bin/conda run --no-capture-output \
-    --prefix /opt/miniconda/envs/cutnrun2tracks-0.2.0 \
-    bash /opt/bioinformatics/workflows/cutnrun2tracks/current/cutnrun2tracks.sh "$@"
-WRAPPER
-
-install -o root -g root -m 0755 \
-    "$CUT_WRAPPER_TMP" /usr/local/bin/cutnrun2tracks
-rm -f "$CUT_WRAPPER_TMP"
+mamba env create --prefix /opt/miniconda/envs/cutnrun2tracks-epic2-0.3.0 \
+  -f "$CUT_RELEASE_DIR/environment.epic2.yml"
+sudo install -o root -g root -m 0755 \
+  "$CUT_RELEASE_DIR/utilities/epic2_shared_launcher.sh" /usr/local/bin/epic2
+epic2 --version
 ```
 
 The launcher does not grant access by itself: the workflow, environment,
 references, SEACR release, and every parent directory must still satisfy the
 read/execute policy above.
+
+Users launch a complete run with one command:
+
+```bash
+nohup cutnrun2tracks --config /absolute/path/to/project/config/config.conf \
+  > /absolute/path/to/project/cutnrun2tracks.nohup.log 2>&1 &
+```
+
+The external nohup file and internal raw/structured logs are both retained.
 
 Retain the previous immutable release and environment during future upgrades.
 Promote a new version by validating a new release directory and environment,
@@ -665,7 +709,7 @@ First inspect traversal and permissions without changing them:
 
 ```bash
 namei -l /opt/bioinformatics/workflows/cutnrun2tracks/current/cutnrun2tracks.sh
-namei -l /opt/miniconda/envs/cutnrun2tracks-0.2.0/bin/python3
+namei -l /opt/miniconda/envs/cutnrun2tracks-0.3.0/bin/python3
 namei -l /opt/bioinformatics/tools/SEACR/releases/1.3/SEACR_1.3.sh
 namei -l /opt/bioinformatics/references/hg38/bowtie2/hg38.1.bt2
 namei -l /usr/local/bin/cutnrun2tracks
@@ -733,7 +777,7 @@ sudo -u "$CUT_TEST_USER" test -r \
 sudo -u "$CUT_TEST_USER" test -r \
     /opt/bioinformatics/workflows/cutnrun2tracks/current/cutnrun2tracks.sh
 sudo -u "$CUT_TEST_USER" test -x \
-    /opt/miniconda/envs/cutnrun2tracks-0.2.0/bin/python3
+    /opt/miniconda/envs/cutnrun2tracks-0.3.0/bin/python3
 sudo -u "$CUT_TEST_USER" test -x \
     /opt/bioinformatics/tools/SEACR/releases/1.3/SEACR_1.3.sh
 sudo -u "$CUT_TEST_USER" test -r \
@@ -745,12 +789,12 @@ sudo -u "$CUT_TEST_USER" /usr/local/bin/cutnrun2tracks --help
 
 sudo -u "$CUT_TEST_USER" \
   /opt/miniconda/bin/conda run --no-capture-output \
-  --prefix /opt/miniconda/envs/cutnrun2tracks-0.2.0 \
+  --prefix /opt/miniconda/envs/cutnrun2tracks-0.3.0 \
   python3 -c 'import pyBigWig; print("CUT environment access: OK")'
 
 sudo -u "$CUT_TEST_USER" \
   /opt/miniconda/bin/conda run --no-capture-output \
-  --prefix /opt/miniconda/envs/cutnrun2tracks-0.2.0 \
+  --prefix /opt/miniconda/envs/cutnrun2tracks-0.3.0 \
   bowtie2-inspect -n \
   /opt/bioinformatics/references/hg38/bowtie2/hg38 >/dev/null
 ```

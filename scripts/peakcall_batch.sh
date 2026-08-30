@@ -29,13 +29,13 @@ fragment_bedgraph() (
 )
 
 call_macs3_class() {
-    local key="$1" layout="$2" genome="$3" peak_class="$4" target_bam="$5" control_bam="$6" out="$7"
+    local key="$1" layout="$2" genome="$3" assay_profile="$4" peak_class="$5" target_bam="$6" control_bam="$7" out="$8"
     mkdir -p "$out"
     local format=() control=() common=()
     [[ "$control_bam" != "." ]] && control=(-c "$control_bam")
     if [[ "$layout" == "PE" ]]; then
         format=(-f BAMPE)
-    elif [[ "$ASSAY_PROFILE" == "cutrun" ]]; then
+    elif [[ "$assay_profile" == "cutrun" ]]; then
         format=(-f BAM --nomodel --shift "$MACS3_CUTRUN_SE_SHIFT" --extsize "$MACS3_CUTRUN_SE_EXTSIZE")
     else
         format=(-f BAM --nomodel --shift "$MACS3_CUTTAG_SE_SHIFT" --extsize "$MACS3_CUTTAG_SE_EXTSIZE")
@@ -54,6 +54,27 @@ call_macs3_class() {
         run_logged "$MACS3_COMMAND" "${common[@]}" -n "${key}.macs3.broad" --broad --broad-cutoff "$MACS3_BROAD_CUTOFF" || return $?
         [[ ! -s "$broad" ]] || cut -f1-3 "$broad" > "${out}/${key}.macs3.broad.bed"
     fi
+}
+
+call_epic2() {
+    local key="$1" layout="$2" genome="$3" target_bam="$4" control_bam="$5" out="$6"
+    local output control=() layout_args=() chrom_sizes effective total fraction
+    mkdir -p "$out"
+    output="${out}/${key}.epic2.broad.tsv"
+    chrom_sizes="$(reference_value CHROM_SIZES "$genome")"
+    effective="$(reference_value EFFECTIVE_GENOME_SIZE "$genome")"
+    total="$(awk '{n += $2} END {printf "%.0f", n}' "$chrom_sizes")"
+    fraction="$(awk -v e="$effective" -v t="$total" 'BEGIN {if(t<=0) exit 1; printf "%.8f", e/t}')"
+    [[ "$control_bam" != "." ]] && control=(--control "$control_bam")
+    [[ "$layout" == "PE" ]] && layout_args+=(--guess-bampe)
+    rm -f "$output" "${out}/${key}.epic2.broad.bed"
+    run_logged "$EPIC2_COMMAND" --treatment "$target_bam" "${control[@]}" \
+        --chromsizes "$chrom_sizes" --effective-genome-fraction "$fraction" \
+        --bin-size "$EPIC2_BIN_SIZE" --gaps-allowed "$EPIC2_GAP_SIZE" \
+        --fragment-size "$EPIC2_FRAGMENT_SIZE" --false-discovery-rate-cutoff "$EPIC2_FDR" \
+        --keep-duplicates --mapq 0 "${layout_args[@]}" --output "$output" || return $?
+    [[ ! -s "$output" ]] || awk 'BEGIN{OFS="\t"} $0 !~ /^(#|track|browser)/ && NF>=3 {print $1,$2,$3}' \
+        "$output" > "${out}/${key}.epic2.broad.bed"
 }
 
 call_seacr() {
@@ -79,12 +100,12 @@ call_seacr() {
 }
 
 worker() {
-    local key="$1" layout="$2" genome="$3" target_class="$4" control_key="$5" primary_caller="$6" primary_class="$7"
+    local key="$1" layout="$2" genome="$3" assay_profile="$4" target_class="$5" control_key="$6" primary_caller="$7" primary_class="$8"
     local target_bam control_bam="." root caller_status_file metadata_file
     local primary primary_status primary_count primary_reason failed_callers="." any_problem=false
     declare -A caller_status=()
     target_bam="$(analysis_bam_path "$key")"
-    [[ "$control_key" != "." ]] && control_bam="$(analysis_bam_path "$control_key")"
+    [[ -n "$control_key" && "$control_key" != "." ]] && control_bam="$(analysis_bam_path "$control_key")"
     root="${OUTPUT_DIR}/05_peaks/per_sample/${key}"
     mkdir -p "$root"
     caller_status_file="${root}/caller_status.tsv"
@@ -119,12 +140,12 @@ worker() {
         if [[ "$target_class" == "narrow" || "$target_class" == "mixed" ]]; then
             run_caller macs3 narrow "${root}/macs3/${key}.macs3.narrow.bed" \
                 "${OUTPUT_DIR}/logs/peakcalling/${key}.macs3.narrow.log" \
-                call_macs3_class "$key" "$layout" "$genome" narrow "$target_bam" "$control_bam" "${root}/macs3"
+                call_macs3_class "$key" "$layout" "$genome" "$assay_profile" narrow "$target_bam" "$control_bam" "${root}/macs3"
         fi
         if [[ "$target_class" == "broad" || "$target_class" == "mixed" ]]; then
             run_caller macs3 broad "${root}/macs3/${key}.macs3.broad.bed" \
                 "${OUTPUT_DIR}/logs/peakcalling/${key}.macs3.broad.log" \
-                call_macs3_class "$key" "$layout" "$genome" broad "$target_bam" "$control_bam" "${root}/macs3"
+                call_macs3_class "$key" "$layout" "$genome" "$assay_profile" broad "$target_bam" "$control_bam" "${root}/macs3"
         fi
     fi
     if [[ ",$PEAK_CALLERS," == *,seacr,* ]]; then
@@ -132,6 +153,11 @@ worker() {
         run_caller seacr narrow "${root}/seacr/${key}.seacr.narrow.bed" \
             "${OUTPUT_DIR}/logs/peakcalling/${key}.seacr.log" \
             call_seacr "$key" "$target_bam" "$control_bam" "${root}/seacr"
+    fi
+    if [[ ",$PEAK_CALLERS," == *,epic2,* && ( "$target_class" == "broad" || "$target_class" == "mixed" ) ]]; then
+        run_caller epic2 broad "${root}/epic2/${key}.epic2.broad.bed" \
+            "${OUTPUT_DIR}/logs/peakcalling/${key}.epic2.broad.log" \
+            call_epic2 "$key" "$layout" "$genome" "$target_bam" "$control_bam" "${root}/epic2"
     fi
 
     primary="${root}/${primary_caller}/${key}.${primary_caller}.${primary_class}.bed"
@@ -167,7 +193,7 @@ while IFS=$'\t' read -r \
     is_control control_type control_id control_key duplicate_policy blacklist ratio spike_stage spike_lot batch donor output_prefix \
     technical_units fastq_1_list fastq_2_list cohort_id cohort_key primary_caller primary_class; do
     [[ "$sample_key" == "sample_key" || "$is_control" == "TRUE" ]] && continue
-    parallel_pool_submit "$sample_key" worker "$sample_key" "$layout" "$genome" "$target_class" \
+    parallel_pool_submit "$sample_key" worker "$sample_key" "$layout" "$genome" "$assay_profile" "$target_class" \
         "$control_key" "$primary_caller" "$primary_class"
 done < "$SAMPLE_MANIFEST"
 parallel_pool_wait_all

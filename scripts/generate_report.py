@@ -44,12 +44,17 @@ def main() -> int:
     report_dir.mkdir(parents=True, exist_ok=True)
     samples = table(root / "00_metadata/sample_manifest.tsv")
     cohorts = table(root / "00_metadata/cohort_manifest.tsv")
+    cohort_membership = table(root / "00_metadata/cohort_membership.tsv")
+    resources = table(root / "00_metadata/resource_budget.tsv")
     counts = table(root / "06_qc/alignment_and_complexity/observation_counts.tsv")
+    complexity = table(root / "06_qc/alignment_and_complexity/library_complexity.tsv")
     consensus = table(root / "05_peaks/consensus/consensus_status.tsv")
     peakcalls = table(root / "05_peaks/per_sample/peakcall_status.tsv")
     normalized = table(root / "04_tracks/normalized_track_family_status.tsv")
     differential = table(root / "08_differential/stage_status.tsv")
     metagene = table(root / "06_qc/metagene/artifacts.tsv")
+    peak_features = table(root / "07_annotation/feature_summary/peak_feature_summary.tsv")
+    peak_annotation_status = table(root / "07_annotation/feature_summary/peak_annotation_status.tsv")
     warnings = []
     for failure in root.rglob("FAILED.json"):
         warnings.append({"severity": "ERROR", "item": str(failure.relative_to(root))})
@@ -77,6 +82,14 @@ def main() -> int:
             warnings.append({"severity": "WARNING", "item": (
                 f"differential:{row.get('status', '?')}:failed_modules="
                 f"{row.get('failed_modules', '?')}:skipped_cohorts={row.get('skipped_cohorts', '0')}")})
+    for row in peak_annotation_status:
+        if row.get("status") != "SUCCESS":
+            warnings.append({"severity": "WARNING", "item": (
+                f"annotation:{row.get('entity_id', '?')}:{row.get('caller', '?')}:"
+                f"{row.get('status', '?')}:{row.get('reason', '.')}")})
+        if row.get("enhancer_annotation") == "not_evaluated":
+            warnings.append({"severity": "INFO", "item": (
+                f"annotation:{row.get('entity_id', '?')}:enhancer_not_evaluated")})
     preseq_dir = root / "06_qc/alignment_and_complexity"
     for log in sorted((root / "logs/qc").glob("*.preseq.log")):
         sample = log.name.removesuffix(".preseq.log")
@@ -100,6 +113,10 @@ def main() -> int:
         ))},
         {"metric": "differential_stage_status", "value": differential[0].get("status", "NOT_AVAILABLE") if differential else "NOT_AVAILABLE"},
         {"metric": "metagene_plot_tasks", "value": str(len(metagene))},
+        {"metric": "annotated_peak_sets", "value": str(len(peak_annotation_status))},
+        {"metric": "annotated_valid_peaks", "value": str(sum(
+            int(row.get("input_valid_peaks", "0") or 0) for row in peak_annotation_status
+        ))},
     ]
     write_tsv(report_dir / "run_summary.tsv", summary, ["metric", "value"])
     document = f"""<!doctype html><html><head><meta charset='utf-8'><title>cutnrun2tracks report</title>
@@ -107,8 +124,12 @@ def main() -> int:
 <h1>cutnrun2tracks report</h1><p>Generated {datetime.now(timezone.utc).isoformat()}.</p>
 <p>QC thresholds are descriptive. Different antibody targets are never normalized together.</p>
 <h2>Run summary</h2>{html_table(summary)}<h2>Cohorts</h2>{html_table(cohorts)}
-<h2>Retained analysis observations</h2>{html_table(counts)}<h2>Consensus status</h2>{html_table(consensus)}
+<h2>Cohort membership and controls</h2>{html_table(cohort_membership)}
+<h2>Resource budget</h2>{html_table(resources)}
+<h2>Retained analysis observations</h2>{html_table(counts)}
+<h2>Library complexity</h2>{html_table(complexity)}<h2>Consensus status</h2>{html_table(consensus)}
 <h2>Per-sample peak-calling status</h2>{html_table(peakcalls)}
+<h2>Peak genomic-feature composition</h2>{html_table(peak_features)}
 <h2>Normalized-track families</h2>{html_table(normalized)}
 <h2>Differential analysis</h2>{html_table(differential)}
 <h2>Metagene aggregate-signal outputs</h2>{html_table(metagene)}

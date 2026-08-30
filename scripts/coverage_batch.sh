@@ -10,10 +10,10 @@ require_config
 mkdir -p "${OUTPUT_DIR}/04_tracks/cpm" "${OUTPUT_DIR}/logs/coverage"
 
 worker() {
-    local key="$1" layout="$2" genome="$3"
+    local key="$1" layout="$2" genome="$3" duplicate_policy="$4"
     local bam count scale chrom_sizes tmp sorted bedgraph bigwig
     bam="$(analysis_bam_path "$key")"
-    count="$(signal_count "$bam" "$layout")"
+    count="$(signal_count "$bam" "$layout" "$duplicate_policy")"
     (( count > 0 )) || die "zero analysis observations for $key"
     scale="$(awk -v n="$count" 'BEGIN {printf "%.15g", 1000000/n}')"
     chrom_sizes="$(reference_value CHROM_SIZES "$genome")"
@@ -45,9 +45,11 @@ worker() {
 
 if is_true "$GENERATE_CPM_TRACKS"; then
     parallel_pool_init "$TRACK_PARALLEL_JOBS"
-    while IFS=$'\t' read -r sample_key sample_id replicate layout genome rest; do
+    while IFS=$'\t' read -r \
+        sample_key sample_id replicate layout genome assay_profile factor antibody_id target_class condition treatment cell_type \
+        is_control control_type control_id control_key duplicate_policy rest; do
         [[ "$sample_key" == "sample_key" ]] && continue
-        parallel_pool_submit "$sample_key" worker "$sample_key" "$layout" "$genome"
+        parallel_pool_submit "$sample_key" worker "$sample_key" "$layout" "$genome" "$duplicate_policy"
     done < "$SAMPLE_MANIFEST"
     parallel_pool_wait_all
 else
