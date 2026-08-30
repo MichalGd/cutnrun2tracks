@@ -1,33 +1,38 @@
 # cutnrun2tracks documentation
 
 This index groups the documentation by user task. Start with the root
-[README](../README.md) for the workflow map, installation, quick start, stage
-summary, and principal output tree.
+[README](../README.md) for installation, quick start, and the principal output
+tree. The pages below describe version 0.3.1 unless stated otherwise.
 
-## Prepare a run
-
-| Topic | Document |
-|---|---|
-| Samplesheet rows, technical and biological replicates, matched controls, configuration safety, and plan/preflight validation | [Inputs and configuration](01_inputs_and_configuration.md) |
-| Complete key list and example samplesheets | [`config/README.md`](../config/README.md) and [`config/config.conf.template`](../config/config.conf.template) |
-| Exact stage order, enable/disable behavior, checkpoints, and declared outputs | [Pipeline stages](07_pipeline_stages.md) |
-| Installation beside an existing ATACseq2tracks server environment and shared reference collection | [Server installation and shared-reference reuse](08_server_installation.md) |
-
-## Understand the analysis
+## Prepare and run an analysis
 
 | Topic | Document |
 |---|---|
-| PE/SE signal units, filtering branches, CPM/DESeq2 formulas, QC definitions, epic2, cohort isolation, and all-peak genomic-feature annotation | [Methods, normalization, QC, and annotation](02_methods.md) |
-| The distinct roles of IgG/input/mock controls, primary raw-count models, DiffBind, and sensitivity analyses | [Controls and differential enrichment](03_differential_enrichment.md) |
-| TSS/TES/gene-body aggregate plots, BED12 reference preparation, HPA subsets, manifests, and standalone reuse | [Metagene aggregate-signal module](06_metagene.md) |
+| Samplesheet rows, technical/biological replicates, controls, and validation | [Inputs and configuration](01_inputs_and_configuration.md) |
+| Complete configuration keys and example samplesheets | [`config/README.md`](../config/README.md) and [`config/config.conf.template`](../config/config.conf.template) |
+| Stage order, optional stages, checkpoints, and declared outputs | [Pipeline stages](07_pipeline_stages.md) |
+| Shared server installation, launchers, environments, and exact deployed references | [Server installation](08_server_installation.md) |
+
+## Methods and interpretation
+
+| Topic | Document |
+|---|---|
+| Overall analytical flow and signal-unit definitions | [Methods overview](02_methods.md) |
+| SEACR, MACS3, epic2, parameters, controls, failure handling, and consensus construction | [Peak calling and consensus](09_peak_calling.md) |
+| Canonical-contig, mapping-quality, duplicate, mitochondrial, and exact blacklist filtering | [Reference filtering and blacklists](10_references_blacklist_and_filtering.md) |
+| FastQC/trimming/alignment QC and every assay-performance metric | [Quality control](11_quality_control.md) |
+| CPM, DESeq2-consensus, robust-CPM, and spike-in track families and formulas | [Tracks and spike-in normalization](12_tracks_and_normalization.md) |
+| Primary statistical models, controls, blocking, contrasts, and sensitivity analyses | [Differential binding](03_differential_enrichment.md) |
+| Consensus, differential-result, and all-peak feature annotation | [Genomic annotation](13_genomic_annotation.md) |
+| TSS/TES/gene-body aggregate plots and gene-set references | [Metagene aggregate-signal module](06_metagene.md) |
 
 ## Operate and validate the workflow
 
 | Topic | Document |
 |---|---|
-| Output organization, annotation summary files, structured/raw logs, checkpoint recovery, partial reruns, and guarded cleanup | [Outputs and recovery](04_outputs_and_recovery.md) |
-| Scientific limitations and real-data pilot decisions | [Limitations and pilot decisions](05_limitations.md) |
-| Synthetic coverage and outstanding Linux/real-data fixtures | [Test matrix](06_test_matrix.md) |
+| Output organization, logs, checkpoint recovery, partial reruns, and cleanup | [Outputs and recovery](04_outputs_and_recovery.md) |
+| Scientific limitations and pilot decisions | [Limitations](05_limitations.md) |
+| Automated test coverage and outstanding real-data validation | [Test matrix](06_test_matrix.md) |
 
 ## Project information
 
@@ -35,6 +40,8 @@ summary, and principal output tree.
 - [Contribution requirements](../CONTRIBUTING.md)
 - [Metagene shared-module interface](../common/metagene/README.md)
 
-Documentation describes version 0.3.1 unless a page explicitly says otherwise.
-The executable behavior is defined by `cutnrun2tracks.sh`, the scripts under
-`scripts/`, and the validated configuration template.
+Executable behavior is defined by `cutnrun2tracks.sh`, `scripts/`, and the
+validated configuration template. For a completed run, inspect
+`00_metadata/resolved_config.tsv`, `sample_manifest.tsv`,
+`reference_manifest.tsv`, and `software_versions.tsv` before assuming that a
+template default was used.

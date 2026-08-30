@@ -1,65 +1,79 @@
-# Methods and normalization
+# Methods overview
 
-For PE libraries, one observation is one retained proper fragment, counted by
-its first-mate record and represented over the observed outer fragment. For SE,
-one observation is one retained primary read footprint; fragment size and
-periodicity are not inferred.
+[Documentation index](README.md) | [Pipeline stages](07_pipeline_stages.md)
 
-The four filtered BAM branches are:
+This page is a map of the analytical method implemented by
+`cutnrun2tracks` 0.3.1. Detailed, implementation-specific descriptions are in
+the linked pages. The resolved configuration and metadata under
+`00_metadata/` remain authoritative for an individual run.
 
-| Branch | MAPQ | Duplicates |
-|---|---:|---|
-| permissive | 0 | retained |
-| intermediate | 0 | removed |
-| q30 duplicate-retained | 30 | retained |
-| stringent | 30 | removed |
+## Analysis unit
 
-The samplesheet duplicate policy selects one q30 branch as `analysis`.
+Rows with the same `sample_id` and biological `replicate` are technical
+sequencing units of one biological library. Their gzip FASTQs are concatenated
+before trimming; they are not treated as independent replicates. Biological
+replicates remain separate throughout alignment, peak calling, consensus
+construction, QC, and differential analysis.
 
-For coverage `C_i(x)` and analysis observation count `L_i`, CPM is
-`C_i(x) * 1e6 / L_i`. Consensus factors use DESeq2 `poscounts`: the relative
-track is `C_i(x)/s_i`. For policy-specific peak counts with column sum `T_i`
-and `G=exp(mean(log(T_i)))`, robust CPM is
-`C_i(x) * 1e6/(s_i*G)`, checked against `DESeq2::fpm(robust=TRUE)`.
+For paired-end (PE) libraries, the intended signal unit is one retained proper
+fragment, represented by the outer aligned coordinates and counted once for
+coverage and interval QC. Single-end (SE) signal is one retained primary read;
+the workflow does not infer nucleosomal fragments from SE data.
 
-All factors are estimated independently for the complete target cohort key,
-which includes genome, assay profile, factor, antibody ID, layout, target
-class, duplicate policy, primary caller, and primary peak class.
+## Processing outline
 
-MACS3 receives `BAMPE` for PE without shift/extension. SE receives `BAM
---nomodel` and the profile-specific provisional preset. SEACR receives nonzero
-PE fragment bedGraphs and a matched control whenever required.
+1. Validate configuration, samples, controls, references, tools, and the
+   declared CPU budget.
+2. Run FastQC on technical FASTQs, merge technical units, optionally trim with
+   Trim Galore/cutadapt, and run FastQC on merged raw and trimmed libraries.
+3. Align to the host or competitive host-plus-spike reference with Bowtie2.
+4. Mark duplicates and construct four canonical-contig, blacklist-filtered BAM
+   branches that vary MAPQ and duplicate retention.
+5. Select the q30 branch requested by each sample's duplicate policy as its
+   `analysis` BAM.
+6. Generate CPM tracks, per-sample peak calls, biological-support consensus
+   regions, cohort-normalized tracks, and optional spike-in tracks.
+7. Generate sequencing and assay-performance QC, metagene plots, differential
+   analyses, genomic annotation, browser files, and final reports.
 
-Optional epic2 is restricted to `broad` or `mixed` targets. It consumes the
-filtered BAM and matched control, uses `--guess-bampe` for PE, configured
-chromosome sizes, effective-genome fraction, bin/gap/FDR settings, and retains
-its full result table beside a normalized three-column BED. epic2 is not used
-for narrow targets. It is an additional sensitivity caller, not evidence that a
-broad mark is automatically high quality.
+## Filtering branches
 
-## QC definitions
+| Name used in the documentation | MAPQ | Duplicates | Main purpose |
+|---|---:|---|---|
+| permissive | 0 | retained | sensitivity to ambiguous mappings and duplicates |
+| intermediate | 0 | removed | sensitivity to ambiguous mappings after deduplication |
+| q30 duplicate-retained | 30 | retained | analysis option for sparse/low-input target libraries |
+| stringent | 30 | removed | conservative analysis and normalization option |
 
-FastQC is run on each original technical unit, the merged biological library,
-and the final trimmed reads. Library complexity is calculated from the q30
-duplicate-retained BAM so duplicate removal cannot erase the multiplicity
-distribution: NRF = distinct/total, PBC1 = singleton/distinct, and PBC2 =
-singleton/doubleton. preseq extrapolation is descriptive and may be unavailable
-for very small or low-complexity libraries. Target-control fingerprints, FRiP,
-fragment-size distributions, cohort-specific Spearman matrices/PCA, and TSS
-profiles provide complementary diagnostics. Optional phantompeak cross-
-correlation is reported but is not promoted to a universal CUT pass/fail rule.
+The samplesheet `duplicate_policy` selects the q30 retained or q30 removed BAM
+as the analysis BAM. Target and control defaults are independently configurable.
+All four branches are made from the marked BAM rather than serially from one
+another. See [Reference filtering and blacklists](10_references_blacklist_and_filtering.md).
 
-## Genomic-feature annotation
+## Detailed method pages
 
-Every valid peak from every successful enabled caller is annotated separately;
-primary consensus peaks may be included as additional entities. A peak receives
-one mutually exclusive category using the configured precedence, by default:
+- [Peak calling and consensus](09_peak_calling.md): SEACR, MACS3, epic2,
+  matched controls, defaults, caller failure isolation, and biological support.
+- [Reference filtering and blacklists](10_references_blacklist_and_filtering.md):
+  exact server files, canonical-contig selection, MAPQ/flag/duplicate filters,
+  and blacklist mechanics.
+- [Quality control](11_quality_control.md): separate sequencing-QC and
+  assay-performance-QC inventories covering every implemented metric.
+- [Tracks and spike-in normalization](12_tracks_and_normalization.md): every
+  formal track family, formulas, intended comparisons, and calibration QC.
+- [Differential binding](03_differential_enrichment.md): target-only DESeq2,
+  DiffBind, blocking, control-subtracted and interaction sensitivities.
+- [Genomic annotation](13_genomic_annotation.md): consensus lookup,
+  differential-table propagation, and mutually exclusive feature summaries for
+  every successful peak set.
+- [Metagene plots](06_metagene.md): TSS, TES, and scaled gene-body aggregate
+  profiles.
 
-`promoter > enhancer > exon > intron > gene_end > other_regulatory > intergenic > unclassified`.
+## Interpretation principle
 
-Promoters, exons, introns, strand-aware downstream gene-end windows, nearest
-genes, and signed TSS distances come from the configured GTF. Enhancer and
-other-regulatory classes require the configured cCRE BED. Peaks on contigs
-absent from chromosome sizes are `unclassified`. A separate all-overlaps table
-preserves every feature overlap, while the exclusive assignment supports
-counts, fractions, peak-covered-base fractions, and stacked horizontal plots.
+The workflow deliberately reports multiple callers, filtering policies,
+normalizations, and QC measurements. They are complementary sensitivity views,
+not interchangeable duplicates of one result. No single QC number or caller is
+promoted to a universal CUT&RUN/CUT&Tag pass/fail rule. The analyst should
+record a project-specific inclusion decision using the combined sequencing,
+assay, replicate, control, and biological evidence.
