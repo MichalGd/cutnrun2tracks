@@ -16,19 +16,19 @@ execution failure (`ERROR`) and must be reviewed with the ordinary QC outputs.
 
 ```text
 <OUTPUT_DIR>/
-├── 00_metadata/                    run, sample, cohort and reference manifests
-├── 01_fastq_qc/                    raw/trimmed FastQC and MultiQC
-├── 02_trimmed_fastq/               merged/trimmed FASTQs; removed by default
-├── 03_alignment/                   sorted, marked, filtered and analysis BAMs
-├── 04_tracks/                      CPM, DESeq2-derived and spike-in tracks
-├── 05_peaks/                       per-sample and consensus peaks
-├── 06_qc/                          alignment, fragment, FRiP, control and metagene QC
-├── 07_annotation/                  consensus and differential annotations
-├── 08_differential/                primary and control-aware sensitivity results
-├── 09_browser/                     UCSC and IGV assets
-├── 10_reports/                     unified MultiQC and lightweight HTML reports
-├── logs/                           stage/tool logs
-└── .checkpoints/                   signature-and-output JSON checkpoints
+|-- 00_metadata/                    run, sample, cohort and reference manifests
+|-- 01_fastq_qc/                    raw/trimmed FastQC and MultiQC
+|-- 02_trimmed_fastq/               merged/trimmed FASTQs; removed by default
+|-- 03_alignment/                   sorted, marked, filtered and analysis BAMs
+|-- 04_tracks/                      CPM, DESeq2-derived and spike-in tracks
+|-- 05_peaks/                       per-sample and consensus peaks
+|-- 06_qc/                          alignment, fragment, FRiP, control and metagene QC
+|-- 07_annotation/                  consensus and differential annotations
+|-- 08_differential/                primary and control-aware sensitivity results
+|-- 09_browser/                     UCSC and IGV assets
+|-- 10_reports/                     unified MultiQC and lightweight HTML reports
+|-- logs/                           stage/tool logs
+`-- .checkpoints/                   signature-and-output JSON checkpoints
 ```
 
 The root README gives a more detailed
@@ -165,3 +165,6 @@ intermediates. The `KEEP_*` switches control individual intermediate families.
 Final tracks, peaks, QC, differential results, annotations, browser assets,
 reports, metadata, logs, and checksums are not cleanup targets under the default
 policy.
+
+For symptom-based diagnosis and selection of the earliest safe restart stage,
+see [Troubleshooting](16_troubleshooting.md).
