@@ -1,4 +1,4 @@
-# cutnrun2tracks 0.3.0
+# cutnrun2tracks 0.3.1
 
 `cutnrun2tracks` is a samplesheet-driven Bash workflow for paired-end and
 single-end CUT&RUN and CUT&Tag data. It provides assay-aware alignment,
@@ -286,7 +286,7 @@ context match unless shared controls are explicitly enabled.
 
 ### Migrating a 0.2.x project
 
-Start from the 0.3.0 config template because validation is intentionally
+Start from the 0.3.1 config template because validation is intentionally
 strict. Copy project-specific values, remove the obsolete run-wide
 `ASSAY_PROFILE`, add the new QC/resource/annotation/logging keys, and remove the
 `blacklist` column from the CSV. Keep each row's `genome`, `layout`, and

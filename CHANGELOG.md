@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1 - 2026-08-30
+
+- Pin the optional epic2 sidecar to `setuptools=80.9.0`. epic2 0.0.52 still
+  imports `pkg_resources`, which is absent from setuptools 82 and newer.
+- Reuse the validated `cutnrun2tracks-0.3.0` main and epic2 environments; this
+  patch changes packaging metadata only and does not require reinstalling the
+  main workflow environment.
+
 ## 0.3.0 - 2026-08-30
 
 - Removed duplicated run-wide assay and row-level blacklist settings. Genome,

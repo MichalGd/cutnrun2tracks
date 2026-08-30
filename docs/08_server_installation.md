@@ -94,7 +94,7 @@ handling to the server's local policy.
 set -euo pipefail
 umask 022
 
-CUT_VERSION=0.3.0
+CUT_VERSION=0.3.1
 CUT_COMMIT=REPLACE_WITH_RELEASE_COMMIT
 CUT_STAGE="/home/micgdu/Analysis/workflows/cutnrun2tracks/install_sources/${CUT_VERSION}"
 CUT_WORKFLOW_ROOT=/opt/bioinformatics/workflows/cutnrun2tracks

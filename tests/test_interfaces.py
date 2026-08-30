@@ -58,6 +58,11 @@ class InterfaceTests(unittest.TestCase):
         self.assertIn('export PATH="$MAIN_ENV/bin:/usr/local/bin:/usr/bin:/bin"', launcher)
         self.assertNotIn("source /opt/miniconda", launcher)
 
+    def test_epic2_environment_pins_pkg_resources_compatible_setuptools(self) -> None:
+        environment = (ROOT / "environment.epic2.yml").read_text(encoding="utf-8")
+        self.assertIn("epic2 =0.0.52", environment)
+        self.assertIn("setuptools =80.9.0", environment)
+
     def test_resource_and_structured_logging_interfaces_are_present(self) -> None:
         preflight = (ROOT / "scripts/preflight.sh").read_text(encoding="utf-8")
         driver = (ROOT / "cutnrun2tracks.sh").read_text(encoding="utf-8")
